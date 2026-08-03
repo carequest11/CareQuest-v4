@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Your Bookings — CareQuest</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@^2.49.4/dist/umd/supabase.js"></script>
+<script src="js/supabaseClient.js"></script>
+<script type="text/javascript">
+  (function (C, A, L) { let p = function (a, ar) { a.q.push(ar); }; let d = C.document; C.Cal = C.Cal || function () { let cal = C.Cal; let ar = arguments; if (!cal.loaded) { cal.ns = {}; cal.q = cal.q || []; d.head.appendChild(d.createElement("script")).src = A; cal.loaded = true; } if (ar[0] === L) { const api = function () { p(api, arguments); }; const namespace = ar[1]; api.q = api.q || []; if(typeof namespace === "string"){cal.ns[namespace] = cal.ns[namespace] || api;p(cal.ns[namespace], ar);p(cal, ["initNamespace", namespace]);} else p(cal, ar); return;} p(cal, ar); }; })(window, "https://app.cal.com/embed/embed.js", "init");
+  Cal("init", { origin: "https://cal.com" });
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -605,7 +611,6 @@ footer a:hover{color:#fff;}
         <p>We're matching you with a volunteer who shares your interests. This can take a few days.</p>
       </div>
     </div>
-    <button class="demo-toggle" onclick="revealMatch()">⚙ Prototype control: simulate getting matched</button>
   </div>
 
   <!-- MATCHED: BOOKING -->
@@ -617,63 +622,94 @@ footer a:hover{color:#fff;}
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#B0492E" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#B0492E" stroke-width="1.6" stroke-linecap="round"/></svg>
       </div>
       <div>
-        <strong>Jamie Lee</strong>
-        <div class="match-tags"><span>Gardening</span><span>Music</span><span>Storytelling</span></div>
+        <strong id="matchName">—</strong>
+        <div class="match-tags" id="matchTags"></div>
       </div>
     </div>
   </div>
 
   <div class="dash-card hidden" id="bookCard">
-    <h2>Book a Time with Jamie</h2>
-    <p>Green slots are when Jamie is free. Tap one, then confirm below.</p>
-    <div class="cal-grid">
-      <div></div>
-      <div class="head">Mon</div><div class="head">Tue</div><div class="head">Wed</div><div class="head">Thu</div><div class="head">Fri</div><div class="head">Sat</div><div class="head">Sun</div>
-
-      <div class="rowlabel">9 AM</div>
-      <div class="cal-cell open">Free</div><div class="cal-cell taken">—</div><div class="cal-cell open">Free</div><div class="cal-cell taken">—</div><div class="cal-cell open">Free</div><div class="cal-cell taken">—</div><div class="cal-cell taken">—</div>
-
-      <div class="rowlabel">11 AM</div>
-      <div class="cal-cell taken">—</div><div class="cal-cell open">Free</div><div class="cal-cell taken">—</div><div class="cal-cell open">Free</div><div class="cal-cell taken">—</div><div class="cal-cell open">Free</div><div class="cal-cell taken">—</div>
-
-      <div class="rowlabel">1 PM</div>
-      <div class="cal-cell open">Free</div><div class="cal-cell open">Free</div><div class="cal-cell taken">—</div><div class="cal-cell taken">—</div><div class="cal-cell open">Free</div><div class="cal-cell taken">—</div><div class="cal-cell open">Free</div>
-
-      <div class="rowlabel">3 PM</div>
-      <div class="cal-cell taken">—</div><div class="cal-cell taken">—</div><div class="cal-cell open">Free</div><div class="cal-cell open">Free</div><div class="cal-cell taken">—</div><div class="cal-cell open">Free</div><div class="cal-cell taken">—</div>
-    </div>
-    <button class="btn btn-primary" id="confirmBookBtn" style="margin-top:20px;" disabled onclick="confirmBooking()">Confirm Booking</button>
+    <h2>Book a Time with <span id="bookPartnerName">your match</span></h2>
+    <p>Pick a time below — this books directly on our shared calendar.</p>
+    <div id="cal-embed" style="width:100%; height:600px; overflow:auto;"></div>
   </div>
 
   <div class="dash-card hidden" id="bookedCard">
     <span class="status-badge verified">✓ Booking Confirmed</span>
     <h2>You're all set</h2>
-    <p>Your visit with Jamie is booked. You can message or start a video call any time before then.</p>
+    <p id="bookedNote">Your visit is booked. You can message or start a video call any time before then.</p>
     <a href="messages.html" class="btn btn-outline" style="margin-top:14px;">Open Messages</a>
   </div>
 </div>
 
 <script>
-  function revealMatch(){
+  async function loadDashboard(){
+    const { data: { session } } = await cq.auth.getSession();
+    if(!session){
+      window.location.href = 'login.html';
+      return;
+    }
+    sessionStorage.setItem('cq_role', 'senior');
+
+    const { data: profile } = await cq
+      .from('senior_profiles')
+      .select('full_name')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    if(!profile){
+      window.location.href = 'login.html';
+      return;
+    }
+
+    document.querySelector('.dash-greeting h1').textContent = 'Welcome, ' + profile.full_name.split(' ')[0];
+
+    const { data: match } = await cq
+      .from('matches')
+      .select('id, scheduled_at')
+      .eq('senior_id', session.user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if(!match) return;
+
     document.getElementById('matchLockedCard').classList.add('hidden');
     document.getElementById('matchCard').classList.remove('hidden');
-    document.getElementById('bookCard').classList.remove('hidden');
-  }
-  document.querySelectorAll('.cal-cell.open').forEach(cell=>{
-    cell.addEventListener('click', ()=>{
-      document.querySelectorAll('.cal-cell.open').forEach(c=>c.classList.remove('selected'));
-      cell.classList.add('selected');
-      document.getElementById('confirmBookBtn').disabled = false;
-    });
-  });
-  function confirmBooking(){
-    document.getElementById('bookCard').classList.add('hidden');
-    document.getElementById('bookedCard').classList.remove('hidden');
-  }
-</script>
 
-<script>
-  sessionStorage.setItem('cq_role', 'senior');
+    const { data: partner } = await cq.rpc('get_match_partner', { p_match_id: match.id });
+    let partnerName = 'your match';
+    if(partner && partner[0]){
+      partnerName = partner[0].display_name;
+      document.getElementById('matchName').textContent = partnerName;
+      const tagsEl = document.getElementById('matchTags');
+      tagsEl.innerHTML = '';
+      (partner[0].interests || '').split(',').map(s => s.trim()).filter(Boolean).forEach(tag => {
+        const span = document.createElement('span');
+        span.textContent = tag;
+        tagsEl.appendChild(span);
+      });
+    }
+    document.getElementById('bookPartnerName').textContent = partnerName;
+
+    if(match.scheduled_at){
+      const when = new Date(match.scheduled_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+      document.getElementById('bookedNote').textContent = 'Your visit with ' + partnerName + ' is booked for ' + when + '. You can message or start a video call any time before then.';
+      document.getElementById('bookedCard').classList.remove('hidden');
+    } else {
+      document.getElementById('bookCard').classList.remove('hidden');
+      // Replace "carequest/visit" with your real Cal.com event type link.
+      Cal("inline", {
+        elementOrSelector: "#cal-embed",
+        calLink: "carequest/visit",
+        config: {
+          theme: "light",
+          metadata: { matchId: match.id }
+        }
+      });
+    }
+  }
+
+  loadDashboard();
 </script>
 
 </body>

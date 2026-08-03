@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Messages — CareQuest</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@^2.49.4/dist/umd/supabase.js"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="https://unpkg.com/@daily-co/daily-js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -597,11 +600,11 @@ footer a:hover{color:#fff;}
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
       </div>
       <div>
-        <strong>Your Match</strong>
+        <strong id="matchName">Your Match</strong>
         <p style="margin:0; font-size:13px; color:var(--ink-soft);">Usually replies within a day</p>
       </div>
     </div>
-    <button class="icon-btn" title="Start video call" onclick="document.getElementById('callOverlay').classList.remove('hidden')">📹</button>
+    <button class="icon-btn" title="Start video call" id="startCallBtn">📹</button>
   </div>
 
   <div class="chat-box" id="chatBox">
@@ -618,18 +621,12 @@ footer a:hover{color:#fff;}
 
 <div class="call-overlay hidden" id="callOverlay">
   <div class="call-stage">
-    <span class="call-name">Your Match</span>
-    <svg width="64" height="64" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#9AA5B1" stroke-width="1.4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#9AA5B1" stroke-width="1.4" stroke-linecap="round"/></svg>
-    <div class="call-self">
-      <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#6B7684" stroke-width="1.4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#6B7684" stroke-width="1.4" stroke-linecap="round"/></svg>
-    </div>
+    <div id="dailyCallContainer" style="position:absolute; inset:0; border-radius:20px; overflow:hidden;"></div>
   </div>
   <div class="call-controls">
-    <button class="call-btn" title="Mute">🎙️</button>
-    <button class="call-btn" title="Camera">🎥</button>
-    <button class="call-btn end" title="End call" onclick="document.getElementById('callOverlay').classList.add('hidden')">✕</button>
+    <button class="call-btn end" title="End call" id="endCallBtn">✕</button>
   </div>
-  <p style="margin-top:18px; font-size:13px; opacity:.55;">Prototype only — no real video connection.</p>
+  <p style="margin-top:18px; font-size:13px; opacity:.55;" id="callStatus">Connecting…</p>
 </div>
 
 <script>
@@ -648,11 +645,85 @@ footer a:hover{color:#fff;}
     if(e.key === 'Enter') sendMsg();
   });
 
-  // Send "Home" back to whichever dashboard this person is signed in as
-  const role = sessionStorage.getItem('cq_role');
-  if(role === 'youth'){
-    document.getElementById('homeLink').href = 'youth-dashboard.html';
+  let currentMatchId = null;
+  let dailyCallFrame = null;
+
+  async function initMessages(){
+    const { data: { session } } = await cq.auth.getSession();
+    if(!session){
+      window.location.href = 'login.html';
+      return;
+    }
+
+    const { data: youthProfile } = await cq.from('youth_profiles').select('id').eq('id', session.user.id).maybeSingle();
+    const role = youthProfile ? 'youth' : 'senior';
+    sessionStorage.setItem('cq_role', role);
+    if(role === 'youth'){
+      document.getElementById('homeLink').href = 'youth-dashboard.html';
+    }
+
+    const filterCol = role === 'youth' ? 'youth_id' : 'senior_id';
+    const { data: match } = await cq
+      .from('matches')
+      .select('id')
+      .eq(filterCol, session.user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if(!match){
+      document.querySelector('.chat-shell').innerHTML = '<p style="text-align:center; margin-top:60px; color:var(--ink-soft);">You don\'t have an active match yet.</p>';
+      return;
+    }
+    currentMatchId = match.id;
+
+    const { data: partner } = await cq.rpc('get_match_partner', { p_match_id: match.id });
+    if(partner && partner[0]){
+      document.getElementById('matchName').textContent = partner[0].display_name;
+    }
   }
+
+  async function startVideoCall(){
+    if(!currentMatchId) return;
+    document.getElementById('callOverlay').classList.remove('hidden');
+    document.getElementById('callStatus').textContent = 'Connecting…';
+
+    const { data: { session } } = await cq.auth.getSession();
+    const res = await fetch('/api/daily-room', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + session.access_token
+      },
+      body: JSON.stringify({ matchId: currentMatchId })
+    });
+    const data = await res.json();
+
+    if(!res.ok){
+      document.getElementById('callStatus').textContent = data.error || 'Could not start the video call.';
+      return;
+    }
+
+    dailyCallFrame = window.DailyIframe.createFrame(document.getElementById('dailyCallContainer'), {
+      showLeaveButton: false,
+      iframeStyle: { width: '100%', height: '100%', border: '0' }
+    });
+    await dailyCallFrame.join({ url: data.url, token: data.token });
+    document.getElementById('callStatus').textContent = 'Connected';
+  }
+
+  function endVideoCall(){
+    if(dailyCallFrame){
+      dailyCallFrame.leave();
+      dailyCallFrame.destroy();
+      dailyCallFrame = null;
+    }
+    document.getElementById('callOverlay').classList.add('hidden');
+  }
+
+  document.getElementById('startCallBtn').addEventListener('click', startVideoCall);
+  document.getElementById('endCallBtn').addEventListener('click', endVideoCall);
+
+  initMessages();
 </script>
 
 </body>

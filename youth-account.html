@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Create Account — CareQuest</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@^2.49.4/dist/umd/supabase.js"></script>
+<script src="js/supabaseClient.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -634,13 +636,81 @@ footer a:hover{color:#fff;}
       <label>Hobbies &amp; Interests <span class="field-hint">(used to match you with a senior)</span></label>
       <textarea id="interests" rows="3" placeholder="Tell us what you enjoy — e.g. gardening, music, board games, storytelling…"></textarea>
     </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="At least 8 characters">
+    </div>
 
-    <a href="youth-interview.html" class="btn btn-rust acct-submit">Create Account &amp; Continue →</a>
+    <p id="signupError" style="color:var(--rust); font-weight:600; display:none;"></p>
+
+    <button type="button" class="btn btn-rust acct-submit" id="signupBtn" onclick="handleSignup()">Create Account &amp; Continue →</button>
     <p style="font-size:13px; opacity:.6; margin-top:14px; text-align:center;">By continuing, your info is submitted to the CareQuest team.</p>
   </form>
 
   <p class="acct-switch">Already have an account? <a href="login.html">Log In</a></p>
 </div>
+
+<script>
+  async function handleSignup(){
+    const btn = document.getElementById('signupBtn');
+    const errEl = document.getElementById('signupError');
+    errEl.style.display = 'none';
+
+    const first_name = document.getElementById('fname').value.trim();
+    const last_name = document.getElementById('lname').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const ageVal = document.getElementById('age').value;
+    const age = ageVal ? parseInt(ageVal, 10) : null;
+    const interests = document.getElementById('interests').value.trim();
+    const password = document.getElementById('password').value;
+
+    if(!first_name || !email || !password){
+      errEl.textContent = 'Please fill in your name, email, and a password.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Creating account…';
+
+    const { data, error } = await cq.auth.signUp({ email, password });
+
+    if(error){
+      errEl.textContent = error.message;
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Create Account & Continue →';
+      return;
+    }
+
+    const res = await fetch('/api/create-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        role: 'youth',
+        userId: data.user.id,
+        profile: { first_name, last_name, email, phone, age, interests }
+      })
+    });
+
+    if(!res.ok){
+      const body = await res.json().catch(()=>({}));
+      errEl.textContent = body.error || 'Could not save your profile. Please try again.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Create Account & Continue →';
+      return;
+    }
+
+    if(data.session){
+      window.location.href = 'youth-interview.html';
+    } else {
+      alert('Account created! Please check your email to confirm your address, then log in.');
+      window.location.href = 'login.html';
+    }
+  }
+</script>
 
 </body>
 </html>

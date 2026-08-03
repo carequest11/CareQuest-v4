@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Log In — CareQuest</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@^2.49.4/dist/umd/supabase.js"></script>
+<script src="js/supabaseClient.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -619,7 +621,9 @@ footer a:hover{color:#fff;}
       </div>
     </div>
 
-    <button class="btn btn-primary acct-submit" onclick="goToDashboard()">Log In</button>
+    <p id="loginError" style="color:var(--rust); font-weight:600; display:none; margin:0 0 16px;"></p>
+
+    <button type="button" class="btn btn-primary acct-submit" id="loginBtn" onclick="handleLogin()">Log In</button>
 
     <div class="login-divider">or</div>
 
@@ -630,8 +634,46 @@ footer a:hover{color:#fff;}
 </div>
 
 <script>
-  function goToDashboard(){
+  async function handleLogin(){
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
     const isYouth = document.getElementById('role-youth').checked;
+    const errEl = document.getElementById('loginError');
+    const btn = document.getElementById('loginBtn');
+
+    errEl.style.display = 'none';
+
+    if(!email || !password){
+      errEl.textContent = 'Please enter your email and password.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Logging in…';
+
+    const { data, error } = await cq.auth.signInWithPassword({ email, password });
+
+    if(error){
+      errEl.textContent = error.message;
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Log In';
+      return;
+    }
+
+    const table = isYouth ? 'youth_profiles' : 'senior_profiles';
+    const { data: profile } = await cq.from(table).select('id').eq('id', data.user.id).maybeSingle();
+
+    if(!profile){
+      errEl.textContent = "We couldn't find a " + (isYouth ? 'volunteer' : 'senior') + ' account for that login — did you mean the other role?';
+      errEl.style.display = 'block';
+      await cq.auth.signOut();
+      btn.disabled = false;
+      btn.textContent = 'Log In';
+      return;
+    }
+
     sessionStorage.setItem('cq_role', isYouth ? 'youth' : 'senior');
     window.location.href = isYouth ? 'youth-dashboard.html' : 'senior-dashboard.html';
   }

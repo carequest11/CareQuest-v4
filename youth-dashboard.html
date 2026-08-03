@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Your Dashboard — CareQuest</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@^2.49.4/dist/umd/supabase.js"></script>
+<script src="js/supabaseClient.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -601,7 +603,6 @@ footer a:hover{color:#fff;}
     <span class="status-badge pending" id="interviewBadge">🕒 Interview Pending Review</span>
     <h2>Your Interview</h2>
     <p>You're booked in with the CareQuest team. Once they confirm your interview, your availability calendar and match will unlock below.</p>
-    <button class="demo-toggle" onclick="verifyInterview()">⚙ Prototype control: mark interview as verified</button>
   </div>
 
   <!-- AVAILABILITY (locked until verified) -->
@@ -641,7 +642,6 @@ footer a:hover{color:#fff;}
         <p>We're finding a senior who shares your interests. This can take a few days.</p>
       </div>
     </div>
-    <button class="demo-toggle" onclick="revealMatch()">⚙ Prototype control: simulate getting matched</button>
   </div>
 
   <div class="dash-card hidden" id="matchCard">
@@ -652,34 +652,80 @@ footer a:hover{color:#fff;}
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
       </div>
       <div>
-        <strong>Margaret Wilson</strong>
-        <div class="match-tags"><span>Gardening</span><span>Music</span><span>Storytelling</span></div>
+        <strong id="matchName">—</strong>
+        <div class="match-tags" id="matchTags"></div>
       </div>
     </div>
-    <p style="margin-top:14px;">Margaret will book a time from your availability. You'll get a message once it's confirmed.</p>
+    <p style="margin-top:14px;" id="matchVisitNote">They'll book a time from your availability. You'll get a message once it's confirmed.</p>
     <a href="messages.html" class="btn btn-outline" style="margin-top:14px;">Open Messages</a>
   </div>
 </div>
 
 <script>
-  function verifyInterview(){
-    document.getElementById('interviewBadge').textContent = '✓ Interview Verified';
-    document.getElementById('interviewBadge').className = 'status-badge verified';
-    document.getElementById('availLockedCard').classList.add('hidden');
-    document.getElementById('availCard').classList.remove('hidden');
-    document.getElementById('matchLockedCard').classList.remove('hidden');
-  }
-  function revealMatch(){
-    document.getElementById('matchLockedCard').classList.add('hidden');
-    document.getElementById('matchCard').classList.remove('hidden');
-  }
   document.querySelectorAll('.avail-cell').forEach(cell=>{
     cell.addEventListener('click', ()=>cell.classList.toggle('selected'));
   });
-</script>
 
-<script>
-  sessionStorage.setItem('cq_role', 'youth');
+  async function loadDashboard(){
+    const { data: { session } } = await cq.auth.getSession();
+    if(!session){
+      window.location.href = 'login.html';
+      return;
+    }
+    sessionStorage.setItem('cq_role', 'youth');
+
+    const { data: profile } = await cq
+      .from('youth_profiles')
+      .select('first_name, interview_status')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    if(!profile){
+      window.location.href = 'login.html';
+      return;
+    }
+
+    document.querySelector('.dash-greeting h1').textContent = 'Welcome, ' + profile.first_name;
+
+    if(profile.interview_status === 'verified'){
+      document.getElementById('interviewBadge').textContent = '✓ Interview Verified';
+      document.getElementById('interviewBadge').className = 'status-badge verified';
+      document.getElementById('availLockedCard').classList.add('hidden');
+      document.getElementById('availCard').classList.remove('hidden');
+      document.getElementById('matchLockedCard').classList.remove('hidden');
+    }
+
+    const { data: match } = await cq
+      .from('matches')
+      .select('id, scheduled_at')
+      .eq('youth_id', session.user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if(match){
+      document.getElementById('matchLockedCard').classList.add('hidden');
+      document.getElementById('matchCard').classList.remove('hidden');
+
+      const { data: partner } = await cq.rpc('get_match_partner', { p_match_id: match.id });
+      if(partner && partner[0]){
+        document.getElementById('matchName').textContent = partner[0].display_name;
+        const tagsEl = document.getElementById('matchTags');
+        tagsEl.innerHTML = '';
+        (partner[0].interests || '').split(',').map(s => s.trim()).filter(Boolean).forEach(tag => {
+          const span = document.createElement('span');
+          span.textContent = tag;
+          tagsEl.appendChild(span);
+        });
+      }
+
+      if(match.scheduled_at){
+        const when = new Date(match.scheduled_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+        document.getElementById('matchVisitNote').textContent = 'Your visit is booked for ' + when + '. You can message or video call any time before then.';
+      }
+    }
+  }
+
+  loadDashboard();
 </script>
 
 </body>
