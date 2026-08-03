@@ -12,6 +12,14 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Daily's own room object always has an absolute url like
+// "https://yourdomain.daily.co/room-name". Anything else — a bare room
+// name left over from a stale/bad row, for instance — isn't something
+// daily-js can join.
+function isFullRoomUrl(value) {
+  return typeof value === 'string' && /^https?:\/\//i.test(value);
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -52,6 +60,11 @@ module.exports = async (req, res) => {
 
     let roomUrl = match.daily_room_url;
 
+    if (roomUrl && !isFullRoomUrl(roomUrl)) {
+      console.error('daily-room: stored daily_room_url is not a full URL, recreating', { matchId: match.id, storedValue: roomUrl });
+      roomUrl = null;
+    }
+
     if (!roomUrl) {
       const roomRes = await fetch('https://api.daily.co/v1/rooms', {
         method: 'POST',
@@ -77,6 +90,14 @@ module.exports = async (req, res) => {
       }
 
       const room = await roomRes.json();
+      console.log('daily-room: Daily room created', room);
+
+      if (!isFullRoomUrl(room.url)) {
+        console.error('daily-room: Daily API did not return a full room url', room);
+        res.status(502).json({ error: 'Daily.co did not return a valid room URL', detail: JSON.stringify(room) });
+        return;
+      }
+
       roomUrl = room.url;
 
       await supabaseAdmin.from('matches').update({ daily_room_url: roomUrl }).eq('id', match.id);
