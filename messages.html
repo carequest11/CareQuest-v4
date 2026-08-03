@@ -607,11 +607,11 @@ footer a:hover{color:#fff;}
     <button class="icon-btn" title="Start video call" id="startCallBtn">📹</button>
   </div>
 
-  <div class="chat-box" id="chatBox">
-    <div class="msg them">Hi! Really looking forward to our visit this week 🌻</div>
-    <div class="msg me">Me too! Let me know if you want to swap the time.</div>
-    <div class="msg them">Saturday morning still works great for me.</div>
-  </div>
+  <p style="font-size:12px; color:var(--ink-soft); text-align:center; background:var(--paper-deep); margin:0; padding:8px 16px; border-left:1px solid var(--line); border-right:1px solid var(--line);">
+    Messages are stored and may be reviewed by the CareQuest team to help keep visits safe.
+  </p>
+
+  <div class="chat-box" id="chatBox"></div>
 
   <div class="chat-input-row">
     <input type="text" id="chatInput" placeholder="Type a message…">
@@ -630,23 +630,87 @@ footer a:hover{color:#fff;}
 </div>
 
 <script>
-  function sendMsg(){
-    const input = document.getElementById('chatInput');
-    if(!input.value.trim()) return;
+  let currentMatchId = null;
+  let currentUserId = null;
+  let partnerName = 'Your match';
+  let dailyCallFrame = null;
+  const renderedMessageIds = new Set();
+
+  function appendMessage(msg){
+    if(renderedMessageIds.has(msg.id)) return;
+    renderedMessageIds.add(msg.id);
+
+    const isMe = msg.sender_id === currentUserId;
+    const time = new Date(msg.created_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
+    const wrap = document.createElement('div');
+    wrap.className = 'msg ' + (isMe ? 'me' : 'them');
+    wrap.dataset.messageId = msg.id;
+
+    const meta = document.createElement('div');
+    meta.style.cssText = 'font-size:11px; font-weight:700; opacity:.7; margin-bottom:4px;';
+    meta.textContent = (isMe ? 'You' : partnerName) + ' · ' + time;
+
+    const body = document.createElement('div');
+    body.textContent = msg.body;
+
+    wrap.appendChild(meta);
+    wrap.appendChild(body);
+
     const box = document.getElementById('chatBox');
-    const div = document.createElement('div');
-    div.className = 'msg me';
-    div.textContent = input.value;
-    box.appendChild(div);
+    box.appendChild(wrap);
     box.scrollTop = box.scrollHeight;
-    input.value = '';
   }
+
+  async function loadMessageThread(matchId){
+    const { data: msgs, error } = await cq
+      .from('messages')
+      .select('id, sender_id, body, created_at')
+      .eq('match_id', matchId)
+      .order('created_at', { ascending: true });
+
+    if(error){
+      console.error('Could not load messages:', error);
+      return;
+    }
+    (msgs || []).forEach(appendMessage);
+  }
+
+  function subscribeToMessages(matchId){
+    cq.channel('messages-' + matchId)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: 'match_id=eq.' + matchId
+      }, payload => appendMessage(payload.new))
+      .subscribe();
+  }
+
+  async function sendMsg(){
+    const input = document.getElementById('chatInput');
+    const body = input.value.trim();
+    if(!body || !currentMatchId) return;
+
+    input.value = '';
+
+    const { data, error } = await cq
+      .from('messages')
+      .insert({ match_id: currentMatchId, sender_id: currentUserId, body })
+      .select()
+      .single();
+
+    if(error){
+      console.error('Could not send message:', error);
+      alert('Could not send that message. Please try again.');
+      return;
+    }
+    appendMessage(data);
+  }
+
   document.getElementById('chatInput').addEventListener('keydown', e=>{
     if(e.key === 'Enter') sendMsg();
   });
-
-  let currentMatchId = null;
-  let dailyCallFrame = null;
 
   async function initMessages(){
     const { data: { session } } = await cq.auth.getSession();
@@ -654,6 +718,7 @@ footer a:hover{color:#fff;}
       window.location.href = 'login.html';
       return;
     }
+    currentUserId = session.user.id;
 
     const { data: youthProfile } = await cq.from('youth_profiles').select('id').eq('id', session.user.id).maybeSingle();
     const role = youthProfile ? 'youth' : 'senior';
@@ -678,8 +743,12 @@ footer a:hover{color:#fff;}
 
     const { data: partner } = await cq.rpc('get_match_partner', { p_match_id: match.id });
     if(partner && partner[0]){
-      document.getElementById('matchName').textContent = partner[0].display_name;
+      partnerName = partner[0].display_name;
+      document.getElementById('matchName').textContent = partnerName;
     }
+
+    await loadMessageThread(currentMatchId);
+    subscribeToMessages(currentMatchId);
   }
 
   async function startVideoCall(){

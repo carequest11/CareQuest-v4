@@ -139,3 +139,95 @@ end;
 $$;
 
 grant execute on function public.get_match_partner(uuid) to authenticated;
+
+-- =========================================================
+-- Messaging: staff role, messages table, and RLS
+--
+-- Run just this section if the tables/policies above are already
+-- applied — every statement here is safe to re-run on its own.
+-- =========================================================
+
+-- Staff accounts (CareQuest team members) get read access to every
+-- message for moderation/support. Rows are added by an admin directly
+-- in the SQL editor (see instructions below) — never through the app —
+-- so this table has zero insert/update/select policies for end users.
+-- It's only ever read through the is_staff() function below.
+create table if not exists public.staff_users (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+alter table public.staff_users enable row level security;
+
+create or replace function public.is_staff()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.staff_users where user_id = auth.uid()
+  );
+$$;
+
+grant execute on function public.is_staff() to authenticated;
+
+-- One row per chat message sent within a match.
+create table if not exists public.messages (
+  id uuid primary key default gen_random_uuid(),
+  match_id uuid not null references public.matches (id) on delete cascade,
+  sender_id uuid not null references auth.users (id) on delete cascade,
+  body text not null check (char_length(btrim(body)) > 0 and char_length(body) <= 4000),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists messages_match_id_created_at_idx
+  on public.messages (match_id, created_at);
+
+alter table public.messages enable row level security;
+
+-- Either match participant, or any staff account, can read a match's
+-- messages. Nobody outside the match (and not staff) can read anything.
+drop policy if exists "participants and staff can read messages" on public.messages;
+create policy "participants and staff can read messages"
+  on public.messages for select
+  using (
+    public.is_staff()
+    or exists (
+      select 1 from public.matches m
+      where m.id = messages.match_id
+        and (m.youth_id = auth.uid() or m.senior_id = auth.uid())
+    )
+  );
+
+-- A user may only insert a message as themselves, and only into a match
+-- they're actually part of. Staff has no special insert privilege here —
+-- they can't post as someone else, and they aren't match participants,
+-- so this policy alone keeps them from inserting at all.
+drop policy if exists "participants can send their own messages" on public.messages;
+create policy "participants can send their own messages"
+  on public.messages for insert
+  with check (
+    sender_id = auth.uid()
+    and exists (
+      select 1 from public.matches m
+      where m.id = messages.match_id
+        and (m.youth_id = auth.uid() or m.senior_id = auth.uid())
+    )
+  );
+
+-- Deliberately no update or delete policy for anyone — every message is
+-- permanent once sent, for both participants and staff.
+
+-- Let Supabase Realtime broadcast INSERTs on this table to subscribed
+-- clients (still filtered per-row by the select policy above). Wrapped
+-- in a DO block so re-running this file doesn't error if it's already
+-- been added.
+do $$
+begin
+  execute 'alter publication supabase_realtime add table public.messages';
+exception
+  when others then
+    raise notice 'messages may already be in the supabase_realtime publication: %', sqlerrm;
+end $$;
