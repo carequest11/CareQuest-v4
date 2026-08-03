@@ -71,6 +71,7 @@ module.exports = async (req, res) => {
 
       if (!roomRes.ok) {
         const detail = await roomRes.text();
+        console.error('daily-room: rooms request failed', roomRes.status, detail);
         res.status(502).json({ error: 'Could not create video room', detail });
         return;
       }
@@ -97,14 +98,21 @@ module.exports = async (req, res) => {
     });
 
     if (!tokenRes.ok) {
-      // Room exists but token minting failed — still let them join unauthenticated.
-      res.status(200).json({ url: roomUrl });
+      // The room is private, so a client can't actually join without a
+      // token — returning success here without one just moves this same
+      // failure into daily-js on the client with a much worse error.
+      const detail = await tokenRes.text();
+      console.error('daily-room: meeting-tokens request failed', tokenRes.status, detail);
+      res.status(502).json({ error: 'Could not create a video call token', detail });
       return;
     }
 
     const tokenData = await tokenRes.json();
-    res.status(200).json({ url: roomUrl, token: tokenData.token });
+    const responseBody = { url: roomUrl, token: tokenData.token };
+    console.log('daily-room: returning', responseBody);
+    res.status(200).json(responseBody);
   } catch (err) {
-    res.status(500).json({ error: 'Unexpected server error' });
+    console.error('daily-room: unexpected error', err);
+    res.status(500).json({ error: 'Unexpected server error', detail: err.message });
   }
 };

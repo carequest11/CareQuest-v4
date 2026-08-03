@@ -687,28 +687,45 @@ footer a:hover{color:#fff;}
     document.getElementById('callOverlay').classList.remove('hidden');
     document.getElementById('callStatus').textContent = 'Connecting…';
 
-    const { data: { session } } = await cq.auth.getSession();
-    const res = await fetch('/api/daily-room', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + session.access_token
-      },
-      body: JSON.stringify({ matchId: currentMatchId })
-    });
-    const data = await res.json();
+    try {
+      const { data: { session } } = await cq.auth.getSession();
+      const res = await fetch('/api/daily-room', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + session.access_token
+        },
+        body: JSON.stringify({ matchId: currentMatchId })
+      });
+      const data = await res.json();
+      console.log('/api/daily-room response:', res.status, data);
 
-    if(!res.ok){
-      document.getElementById('callStatus').textContent = data.error || 'Could not start the video call.';
-      return;
+      if(!res.ok){
+        document.getElementById('callStatus').textContent = data.error || 'Could not start the video call.';
+        return;
+      }
+      if(typeof data.url !== 'string' || !data.url){
+        document.getElementById('callStatus').textContent = 'Video call service did not return a room URL.';
+        return;
+      }
+
+      // Only pass token if it's actually a string — daily-js throws if a
+      // "token" key is present but not a string (e.g. undefined).
+      const joinConfig = { url: data.url };
+      if(typeof data.token === 'string' && data.token){
+        joinConfig.token = data.token;
+      }
+
+      dailyCallFrame = window.DailyIframe.createFrame(document.getElementById('dailyCallContainer'), {
+        showLeaveButton: false,
+        iframeStyle: { width: '100%', height: '100%', border: '0' }
+      });
+      await dailyCallFrame.join(joinConfig);
+      document.getElementById('callStatus').textContent = 'Connected';
+    } catch (err){
+      console.error('startVideoCall failed:', err);
+      document.getElementById('callStatus').textContent = 'Could not start the video call: ' + (err && err.message ? err.message : String(err));
     }
-
-    dailyCallFrame = window.DailyIframe.createFrame(document.getElementById('dailyCallContainer'), {
-      showLeaveButton: false,
-      iframeStyle: { width: '100%', height: '100%', border: '0' }
-    });
-    await dailyCallFrame.join({ url: data.url, token: data.token });
-    document.getElementById('callStatus').textContent = 'Connected';
   }
 
   function endVideoCall(){
