@@ -3,14 +3,14 @@
 // and an empty <div id="authSlot"></div> somewhere in the header.
 //
 // Signed out: shows a large, high-contrast "Log In" button.
-// Signed in: shows the member's first name (linking to member.html)
+// Signed in: shows the member's first name (linking to member)
 // and a "Log Out" button. Reacts live to auth state changes so a page
 // left open across a login/logout elsewhere stays in sync.
 (function () {
   function renderSignedOut(slot) {
     slot.textContent = '';
     const a = document.createElement('a');
-    a.href = 'login.html';
+    a.href = 'login';
     a.className = 'auth-btn auth-btn-login';
     a.textContent = 'Log In';
     slot.appendChild(a);
@@ -22,7 +22,7 @@
     wrap.className = 'auth-signed-in';
 
     const nameLink = document.createElement('a');
-    nameLink.href = 'member.html';
+    nameLink.href = 'member';
     nameLink.className = 'auth-btn auth-btn-name';
     nameLink.textContent = name;
 
@@ -32,7 +32,7 @@
     logoutBtn.textContent = 'Log Out';
     logoutBtn.addEventListener('click', async () => {
       await cq.auth.signOut();
-      window.location.href = 'index.html';
+      window.location.href = 'index';
     });
 
     wrap.appendChild(nameLink);
