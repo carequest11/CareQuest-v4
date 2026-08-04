@@ -1,0 +1,73 @@
+/* Shared header sign-in/member widget — used on every CareQuest page.
+   Large text, high contrast, generous tap targets (44px+) since our
+   users include seniors. Colors reference the same CSS variables each
+   page already defines in its own <style> block, with hex fallbacks. */
+
+.auth-slot{ display:flex; align-items:center; min-height:48px; }
+
+.auth-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-family:'Inter', sans-serif;
+  font-weight:700;
+  font-size:17px;
+  line-height:1.2;
+  padding:12px 24px;
+  min-height:48px;
+  min-width:44px;
+  border-radius:999px;
+  border:2px solid transparent;
+  text-decoration:none;
+  cursor:pointer;
+  transition:transform .15s ease, background .15s ease, color .15s ease;
+}
+.auth-btn:focus-visible{
+  outline:3px solid var(--gold, #C99A44);
+  outline-offset:3px;
+}
+
+.auth-btn-login{
+  background:var(--teal, #2F6B62);
+  color:#fff;
+  border-color:var(--teal, #2F6B62);
+}
+.auth-btn-login:hover{
+  background:var(--teal-deep, #204A44);
+  border-color:var(--teal-deep, #204A44);
+  transform:translateY(-1px);
+}
+
+.auth-signed-in{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.auth-btn-name{
+  background:#fff;
+  color:var(--teal, #2F6B62);
+  border-color:var(--teal, #2F6B62);
+}
+.auth-btn-name:hover{
+  background:var(--teal, #2F6B62);
+  color:#fff;
+}
+
+.auth-btn-logout{
+  background:transparent;
+  color:var(--rust, #B0492E);
+  border-color:var(--rust, #B0492E);
+  font-size:16px;
+  padding:10px 20px;
+}
+.auth-btn-logout:hover{
+  background:var(--rust, #B0492E);
+  color:#fff;
+}
+
+@media (max-width:600px){
+  .auth-btn{ font-size:15px; padding:10px 18px; }
+  .auth-signed-in{ gap:6px; }
+}

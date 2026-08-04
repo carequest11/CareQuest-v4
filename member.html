@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Create Account — CareQuest</title>
+<title>Your CareQuest — CareQuest</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@^2.49.4/dist/umd/supabase.js"></script>
 <script src="js/supabaseClient.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -581,7 +581,7 @@ footer a:hover{color:#fff;}
 
 </style>
 </head>
-<body class="senior-page">
+<body>
 
 <header class="site">
   <div class="wrap nav">
@@ -590,120 +590,129 @@ footer a:hover{color:#fff;}
       CareQuest
     </a>
     <div class="header-actions">
-      <a href="get-started.html" class="back-link">← Back</a>
       <div id="authSlot" class="auth-slot"></div>
     </div>
   </div>
 </header>
 <script src="js/authHeader.js"></script>
 
-<div class="acct-shell">
-  <div class="acct-head">
-    <span class="eyebrow" style="justify-content:center;">Sign Up</span>
-    <h1>Create your account</h1>
-    <p>Just a few simple questions — then we'll find a time to meet.</p>
+<div class="dash-shell">
+  <div class="dash-greeting">
+    <span class="eyebrow">Your CareQuest</span>
+    <h1 id="memberGreeting">Welcome back</h1>
+    <p>Everything about your match, in one place.</p>
   </div>
 
-  <div class="steps" style="margin-bottom:32px;">
-    <div class="step-pill active"><span class="num">1</span> Create Account</div>
-    <div class="step-connector"></div>
-    <div class="step-pill"><span class="num">2</span> Bookings</div>
+  <div class="dash-card hidden" id="noMatchCard">
+    <h2>No Match Yet</h2>
+    <p>We're finding the right match for you. Check back soon — we'll let you know as soon as it happens.</p>
   </div>
 
-  <form class="acct-card" onsubmit="return false;">
-    <div class="field">
-      <label for="s-name">Your name</label>
-      <input id="s-name" type="text" placeholder="e.g. Margaret Wilson">
+  <div class="dash-card hidden" id="matchInfoCard">
+    <span class="status-badge matched">🤝 Matched</span>
+    <h2>Your Match</h2>
+    <div class="match-card">
+      <div class="match-avatar">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <strong id="mpName" style="font-size:19px;">—</strong>
+        <div class="match-tags" id="mpTags"></div>
+      </div>
     </div>
-    <div class="field">
-      <label for="s-email">Email address</label>
-      <input id="s-email" type="email" placeholder="e.g. margaret@email.com">
-    </div>
-    <div class="field">
-      <label for="s-phone">Phone number</label>
-      <input id="s-phone" type="tel" placeholder="e.g. (604) 555-0199">
-    </div>
-    <div class="field">
-      <label for="s-career">Past career</label>
-      <input id="s-career" type="text" placeholder="e.g. Elementary school teacher">
-    </div>
+  </div>
 
-    <div class="field">
-      <label for="s-interests">Hobbies &amp; Interests <span class="field-hint">(we use this to match you with a volunteer)</span></label>
-      <textarea id="s-interests" rows="3" placeholder="Tell us what you enjoy — e.g. gardening, music, board games, storytelling…"></textarea>
-    </div>
-    <div class="field">
-      <label for="s-password">Password</label>
-      <input id="s-password" type="password" placeholder="At least 8 characters">
-    </div>
+  <a href="messages.html" class="dash-card hidden" id="messagesPreviewCard" style="text-decoration:none; color:inherit; display:block;">
+    <h2>💬 Messages</h2>
+    <p id="messagePreviewText" style="color:var(--ink-soft); font-size:16px;">No messages yet — say hello!</p>
+  </a>
 
-    <p id="signupError" style="color:var(--rust); font-weight:600; display:none;"></p>
+  <div class="dash-card hidden" id="upcomingCallCard">
+    <h2>📅 Upcoming Visit</h2>
+    <p id="upcomingCallText" style="font-size:16px;">No visit scheduled yet.</p>
+  </div>
 
-    <button type="button" class="btn btn-primary acct-submit" id="signupBtn" onclick="handleSignup()">Create Account &amp; Continue →</button>
-    <p style="font-size:13px; opacity:.6; margin-top:14px; text-align:center;">By continuing, your info is submitted to the CareQuest team.</p>
-  </form>
-
-  <p class="acct-switch">Already have an account? <a href="login.html">Log In</a></p>
+  <div style="text-align:center; margin-top:8px;">
+    <a href="#" id="dashboardLink" class="btn btn-outline">Go to your full dashboard →</a>
+  </div>
 </div>
 
 <script>
-  async function handleSignup(){
-    const btn = document.getElementById('signupBtn');
-    const errEl = document.getElementById('signupError');
-    errEl.style.display = 'none';
-
-    const full_name = document.getElementById('s-name').value.trim();
-    const email = document.getElementById('s-email').value.trim();
-    const phone = document.getElementById('s-phone').value.trim();
-    const past_career = document.getElementById('s-career').value.trim();
-    const interests = document.getElementById('s-interests').value.trim();
-    const password = document.getElementById('s-password').value;
-
-    if(!full_name || !email || !password){
-      errEl.textContent = 'Please fill in your name, email, and a password.';
-      errEl.style.display = 'block';
-      return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = 'Creating account…';
-
-    const { data, error } = await cq.auth.signUp({ email, password });
-
-    if(error){
-      errEl.textContent = error.message;
-      errEl.style.display = 'block';
-      btn.disabled = false;
-      btn.textContent = 'Create Account & Continue →';
-      return;
-    }
-
-    const res = await fetch('/api/create-profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        role: 'senior',
-        userId: data.user.id,
-        profile: { full_name, email, phone, past_career, interests }
-      })
-    });
-
-    if(!res.ok){
-      const body = await res.json().catch(()=>({}));
-      errEl.textContent = body.error || 'Could not save your profile. Please try again.';
-      errEl.style.display = 'block';
-      btn.disabled = false;
-      btn.textContent = 'Create Account & Continue →';
-      return;
-    }
-
-    if(data.session){
-      window.location.href = 'member.html';
-    } else {
-      alert('Account created! Please check your email to confirm your address, then log in.');
+  async function loadMember(){
+    const { data: { session } } = await cq.auth.getSession();
+    if(!session){
       window.location.href = 'login.html';
+      return;
+    }
+
+    const { data: youthProfile } = await cq.from('youth_profiles').select('first_name').eq('id', session.user.id).maybeSingle();
+    let role, displayFirstName;
+
+    if(youthProfile){
+      role = 'youth';
+      displayFirstName = youthProfile.first_name;
+      document.getElementById('dashboardLink').href = 'youth-dashboard.html';
+    } else {
+      const { data: seniorProfile } = await cq.from('senior_profiles').select('full_name').eq('id', session.user.id).maybeSingle();
+      role = 'senior';
+      displayFirstName = seniorProfile ? seniorProfile.full_name.split(' ')[0] : 'there';
+      document.getElementById('dashboardLink').href = 'senior-dashboard.html';
+    }
+
+    document.getElementById('memberGreeting').textContent = 'Welcome back, ' + displayFirstName;
+
+    const filterCol = role === 'youth' ? 'youth_id' : 'senior_id';
+    const { data: match } = await cq
+      .from('matches')
+      .select('id, scheduled_at')
+      .eq(filterCol, session.user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if(!match){
+      document.getElementById('noMatchCard').classList.remove('hidden');
+      return;
+    }
+
+    document.getElementById('matchInfoCard').classList.remove('hidden');
+    document.getElementById('messagesPreviewCard').classList.remove('hidden');
+    document.getElementById('upcomingCallCard').classList.remove('hidden');
+
+    const { data: partner } = await cq.rpc('get_match_partner', { p_match_id: match.id });
+    let partnerName = 'your match';
+    if(partner && partner[0]){
+      partnerName = partner[0].display_name;
+      document.getElementById('mpName').textContent = partnerName;
+      const tagsEl = document.getElementById('mpTags');
+      tagsEl.innerHTML = '';
+      (partner[0].interests || '').split(',').map(s => s.trim()).filter(Boolean).forEach(tag => {
+        const span = document.createElement('span');
+        span.textContent = tag;
+        tagsEl.appendChild(span);
+      });
+    }
+
+    if(match.scheduled_at){
+      const when = new Date(match.scheduled_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+      document.getElementById('upcomingCallText').textContent = 'Your next visit with ' + partnerName + ' is ' + when + '.';
+    }
+
+    const { data: lastMsg } = await cq
+      .from('messages')
+      .select('sender_id, body, created_at')
+      .eq('match_id', match.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if(lastMsg){
+      const who = lastMsg.sender_id === session.user.id ? 'You' : partnerName;
+      const snippet = lastMsg.body.length > 90 ? lastMsg.body.slice(0, 90) + '…' : lastMsg.body;
+      document.getElementById('messagePreviewText').textContent = who + ': "' + snippet + '"';
     }
   }
+
+  loadMember();
 </script>
 
 </body>

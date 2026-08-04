@@ -7,6 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/auth-header.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@^2.49.4/dist/umd/supabase.js"></script>
+<script src="js/supabaseClient.js"></script>
 <style>
 :root{
   --paper:#FBF5E9;
@@ -412,7 +415,7 @@ section.about-section{padding:80px 0;}
 .testimonial-wrap figcaption{font-family:'Inter'; font-weight:600; opacity:.9;}
 .testimonial-note{font-size:14px; opacity:.7; margin-top:6px;}
 
-.team-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:28px;}
+.team-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:28px;}
 .team-card{text-align:center;}
 .avatar{
   width:120px;height:120px;border-radius:50%;margin:0 auto 16px;
@@ -421,6 +424,7 @@ section.about-section{padding:80px 0;}
 }
 .team-card h3{font-size:18px; margin-bottom:4px;}
 .team-card p{color:var(--ink-soft); font-size:15px; margin:0;}
+@media (max-width:980px){ .team-grid{grid-template-columns:repeat(2,1fr);} }
 @media (max-width:780px){ .team-grid{grid-template-columns:1fr;} }
 
 .about-cta{
@@ -592,11 +596,12 @@ footer a:hover{color:#fff;}
       <a href="index.html">Home</a>
     </nav>
     <div class="header-actions">
-      <a href="login.html" class="login-link">Log In</a>
+      <div id="authSlot" class="auth-slot"></div>
       <a href="get-started.html" class="btn btn-primary" style="padding:10px 20px; font-size:15px;">Get Started</a>
     </div>
   </div>
 </header>
+<script src="js/authHeader.js"></script>
 
 <div class="wrap about-hero">
   <span class="eyebrow" style="justify-content:center;">About CareQuest</span>
@@ -654,9 +659,8 @@ footer a:hover{color:#fff;}
 <section class="about-section" style="padding-top:0;">
   <div class="wrap">
     <div class="testimonial-wrap" data-reveal>
-      <blockquote>"She writes me every week now. I look forward to it more than almost anything else in my week."</blockquote>
-      <figcaption>A CareQuest match, sample testimonial</figcaption>
-      <p class="testimonial-note">Placeholder quote — swap in a real story once you have one.</p>
+      <blockquote>"She is a very caring, family oriented and intelligent person and I think we have many of the same values. I have twelve grandchildren and have always had an interest in their ideas and accomplishments. Being involved with young people gives me faith in the future of our country."</blockquote>
+      <figcaption>Kathy McKenzie, Seniors' Activity Centre, West Vancouver</figcaption>
     </div>
   </div>
 </section>
@@ -672,22 +676,25 @@ footer a:hover{color:#fff;}
         <div class="avatar">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
         </div>
-        <h3>Team Member</h3>
-        <p>Role placeholder</p>
+        <h3>Alex Jin</h3>
       </div>
       <div class="team-card" data-reveal>
         <div class="avatar">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#B0492E" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#B0492E" stroke-width="1.6" stroke-linecap="round"/></svg>
         </div>
-        <h3>Team Member</h3>
-        <p>Role placeholder</p>
+        <h3>Lucas Lin</h3>
       </div>
       <div class="team-card" data-reveal>
         <div class="avatar">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#C99A44" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#C99A44" stroke-width="1.6" stroke-linecap="round"/></svg>
         </div>
-        <h3>Team Member</h3>
-        <p>Role placeholder</p>
+        <h3>Ben Ghandchi</h3>
+      </div>
+      <div class="team-card" data-reveal>
+        <div class="avatar">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#204A44" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#204A44" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Jeffrey Ren</h3>
       </div>
     </div>
   </div>
