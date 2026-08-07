@@ -371,3 +371,93 @@ create policy "participants can cancel visits"
 -- looks up "the next upcoming visit" directly from public.visits
 -- (status = 'scheduled', scheduled_at > now(), ordered ascending) —
 -- one source of truth, no denormalization to keep consistent.
+
+-- =========================================================
+-- Profile photos: avatar_url columns, Storage bucket, and RLS
+--
+-- Run just this section if everything above is already applied.
+-- =========================================================
+
+alter table public.youth_profiles add column if not exists avatar_url text;
+alter table public.senior_profiles add column if not exists avatar_url text;
+
+-- get_match_partner's return columns are changing (adding avatar_url),
+-- and Postgres won't let create-or-replace change a function's return
+-- shape — it has to be dropped and recreated.
+drop function if exists public.get_match_partner(uuid);
+
+create function public.get_match_partner(p_match_id uuid)
+returns table (display_name text, interests text, avatar_url text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  m record;
+begin
+  select youth_id, senior_id into m
+  from public.matches
+  where id = p_match_id
+    and (youth_id = auth.uid() or senior_id = auth.uid());
+
+  if not found then
+    return; -- caller isn't part of this match: return zero rows
+  end if;
+
+  if m.youth_id = auth.uid() then
+    return query
+      select sp.full_name, sp.interests, sp.avatar_url
+      from public.senior_profiles sp
+      where sp.id = m.senior_id;
+  else
+    return query
+      select (yp.first_name || ' ' || coalesce(yp.last_name, ''))::text, yp.interests, yp.avatar_url
+      from public.youth_profiles yp
+      where yp.id = m.youth_id;
+  end if;
+end;
+$$;
+
+grant execute on function public.get_match_partner(uuid) to authenticated;
+
+-- Public-read bucket for profile photos. Photos are meant to be seen
+-- by a match (and are shown in the app only via get_match_partner, so
+-- an unmatched stranger never sees a filename/URL to begin with), but
+-- the bucket itself is world-readable like most avatar hosting setups.
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+drop policy if exists "avatar images are publicly readable" on storage.objects;
+create policy "avatar images are publicly readable"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+
+-- A user may only write inside their own folder: avatars/<user id>/...
+drop policy if exists "users can upload their own avatar" on storage.objects;
+create policy "users can upload their own avatar"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "users can update their own avatar" on storage.objects;
+create policy "users can update their own avatar"
+  on storage.objects for update
+  using (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  )
+  with check (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "users can delete their own avatar" on storage.objects;
+create policy "users can delete their own avatar"
+  on storage.objects for delete
+  using (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
