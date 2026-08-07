@@ -610,36 +610,36 @@ footer a:hover{color:#fff;}
     <div class="step-pill"><span class="num">2</span> Bookings</div>
   </div>
 
-  <form class="acct-card" onsubmit="return false;">
+  <form class="acct-card" onsubmit="handleSignup(); return false;">
     <div class="field">
       <label for="s-name">Your name</label>
-      <input id="s-name" type="text" placeholder="e.g. Margaret Wilson">
+      <input id="s-name" type="text" placeholder="e.g. Margaret Wilson" required>
     </div>
     <div class="field">
       <label for="s-email">Email address</label>
-      <input id="s-email" type="email" placeholder="e.g. margaret@email.com">
+      <input id="s-email" type="email" placeholder="e.g. margaret@email.com" required>
     </div>
     <div class="field">
       <label for="s-phone">Phone number</label>
-      <input id="s-phone" type="tel" placeholder="e.g. (604) 555-0199">
+      <input id="s-phone" type="tel" placeholder="e.g. (604) 555-0199" required>
     </div>
     <div class="field">
       <label for="s-career">Past career</label>
-      <input id="s-career" type="text" placeholder="e.g. Elementary school teacher">
+      <input id="s-career" type="text" placeholder="e.g. Elementary school teacher" required>
     </div>
 
     <div class="field">
       <label for="s-interests">Hobbies &amp; Interests <span class="field-hint">(we use this to match you with a volunteer)</span></label>
-      <textarea id="s-interests" rows="3" placeholder="Tell us what you enjoy — e.g. gardening, music, board games, storytelling…"></textarea>
+      <textarea id="s-interests" rows="3" placeholder="Tell us what you enjoy — e.g. gardening, music, board games, storytelling…" required></textarea>
     </div>
     <div class="field">
       <label for="s-password">Password</label>
-      <input id="s-password" type="password" placeholder="At least 8 characters">
+      <input id="s-password" type="password" placeholder="At least 8 characters" required>
     </div>
 
     <p id="signupError" style="color:var(--rust); font-weight:600; display:none;"></p>
 
-    <button type="button" class="btn btn-primary acct-submit" id="signupBtn" onclick="handleSignup()">Create Account &amp; Continue →</button>
+    <button type="submit" class="btn btn-primary acct-submit" id="signupBtn">Create Account &amp; Continue →</button>
     <p style="font-size:13px; opacity:.6; margin-top:14px; text-align:center;">By continuing, your info is submitted to the CareQuest team.</p>
   </form>
 

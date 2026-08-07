@@ -610,45 +610,45 @@ footer a:hover{color:#fff;}
     <div class="step-pill"><span class="num">2</span> Interview</div>
   </div>
 
-  <form class="acct-card" onsubmit="return false;">
+  <form class="acct-card" onsubmit="handleSignup(); return false;">
     <h2>Your Info</h2>
     <div class="field-row">
       <div class="field">
         <label for="fname">First name</label>
-        <input id="fname" type="text" placeholder="Jamie">
+        <input id="fname" type="text" placeholder="Jamie" required>
       </div>
       <div class="field">
         <label for="lname">Last name</label>
-        <input id="lname" type="text" placeholder="Lee">
+        <input id="lname" type="text" placeholder="Lee" required>
       </div>
     </div>
     <div class="field">
       <label for="email">Email</label>
-      <input id="email" type="email" placeholder="jamie@email.com">
+      <input id="email" type="email" placeholder="jamie@email.com" required>
     </div>
     <div class="field-row">
       <div class="field">
         <label for="phone">Phone</label>
-        <input id="phone" type="tel" placeholder="(604) 555-0199">
+        <input id="phone" type="tel" placeholder="(604) 555-0199" required>
       </div>
       <div class="field">
         <label for="age">Age</label>
-        <input id="age" type="number" placeholder="16">
+        <input id="age" type="number" placeholder="16" required>
       </div>
     </div>
 
     <div class="field">
       <label>Hobbies &amp; Interests <span class="field-hint">(used to match you with a senior)</span></label>
-      <textarea id="interests" rows="3" placeholder="Tell us what you enjoy — e.g. gardening, music, board games, storytelling…"></textarea>
+      <textarea id="interests" rows="3" placeholder="Tell us what you enjoy — e.g. gardening, music, board games, storytelling…" required></textarea>
     </div>
     <div class="field">
       <label for="password">Password</label>
-      <input id="password" type="password" placeholder="At least 8 characters">
+      <input id="password" type="password" placeholder="At least 8 characters" required>
     </div>
 
     <p id="signupError" style="color:var(--rust); font-weight:600; display:none;"></p>
 
-    <button type="button" class="btn btn-rust acct-submit" id="signupBtn" onclick="handleSignup()">Create Account &amp; Continue →</button>
+    <button type="submit" class="btn btn-rust acct-submit" id="signupBtn">Create Account &amp; Continue →</button>
     <p style="font-size:13px; opacity:.6; margin-top:14px; text-align:center;">By continuing, your info is submitted to the CareQuest team.</p>
   </form>
 

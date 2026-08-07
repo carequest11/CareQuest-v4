@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/auth-header.css">
 <style>
 :root{
@@ -32,14 +32,14 @@ body{
   background:var(--paper);
   color:var(--ink);
   font-family:'Inter',sans-serif;
-  font-size:18px;
+  font-size:20px;
   line-height:1.65;
   -webkit-font-smoothing:antialiased;
 }
 a{color:inherit;}
 h1,h2,h3{
-  font-family:'Fraunces',serif;
-  font-weight:600;
+  font-family:'Inter',sans-serif;
+  font-weight:700;
   line-height:1.15;
   margin:0;
   color:var(--ink);
@@ -48,7 +48,7 @@ h1,h2,h3{
 button, .btn{
   font-family:'Inter',sans-serif;
   font-weight:600;
-  font-size:17px;
+  font-size:19px;
   cursor:pointer;
   border:none;
   border-radius:999px;
@@ -84,7 +84,7 @@ header.site{
 }
 .logo{
   display:flex; align-items:center; gap:10px;
-  font-family:'Fraunces',serif; font-weight:600; font-size:22px;
+  font-family:'Inter',sans-serif; font-weight:700; font-size:22px;
   text-decoration:none;
 }
 .logo-mark{
@@ -460,21 +460,21 @@ footer a:hover{color:#fff;}
 .dash-shell{max-width:760px; margin:0 auto; padding:40px 28px 72px;}
 .dash-greeting{margin-bottom:28px;}
 .dash-greeting h1{font-size:clamp(24px,3vw,32px);}
-.dash-greeting p{color:var(--ink-soft); margin-top:8px;}
+.dash-greeting p{color:var(--ink); margin-top:8px;}
 .dash-card{
   background:#fff; border:1px solid var(--line); border-radius:18px;
   padding:28px 30px; margin-bottom:22px;
 }
-.dash-card h2{font-size:19px; margin-bottom:6px; display:flex; align-items:center; gap:10px;}
-.dash-card p{color:var(--ink-soft); font-size:15px; margin:0;}
+.dash-card h2{font-size:22px; margin-bottom:8px; display:flex; align-items:center; gap:10px;}
+.dash-card p{color:var(--ink); font-size:20px; margin:0;}
 .dash-card.locked{background:var(--paper-deep); border-style:dashed;}
 .lock-icon{
   width:34px;height:34px;border-radius:50%;background:#fff;border:1.5px solid var(--line);
   display:flex;align-items:center;justify-content:center; flex-shrink:0;
 }
 .status-badge{
-  display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700;
-  padding:5px 12px; border-radius:999px; margin-bottom:14px;
+  display:inline-flex; align-items:center; gap:6px; font-size:16px; font-weight:700;
+  padding:6px 14px; border-radius:999px; margin-bottom:14px;
 }
 .status-badge.pending{background:#F6E9D4; color:#9A6A1F;}
 .status-badge.verified{background:#E1F0EA; color:var(--teal-deep);}
@@ -505,7 +505,7 @@ footer a:hover{color:#fff;}
 }
 .match-tags{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
 .match-tags span{
-  font-size:12px; font-weight:600; background:var(--paper-deep); padding:4px 10px; border-radius:999px; color:var(--ink-soft);
+  font-size:16px; font-weight:600; background:var(--paper-deep); padding:5px 12px; border-radius:999px; color:var(--ink);
 }
 
 /* ===================================================
@@ -586,17 +586,17 @@ footer a:hover{color:#fff;}
 .avail-grid-wrap{overflow-x:auto; margin-top:20px; -webkit-overflow-scrolling:touch;}
 .avail-grid-v2{border-collapse:separate; border-spacing:6px; width:100%;}
 .avail-grid-v2 th{
-  font-size:14px; font-weight:700; color:var(--ink-soft);
+  font-size:16px; font-weight:700; color:var(--ink);
   padding:4px 6px; text-align:center; white-space:nowrap;
 }
 .avail-grid-v2 td.avail-daylabel{
-  font-size:17px; font-weight:700; color:var(--ink);
+  font-size:19px; font-weight:700; color:var(--ink);
   white-space:nowrap; padding-right:14px; text-align:right;
 }
 .avail-block-btn{
-  width:100%; min-width:74px; min-height:52px; border-radius:10px;
+  width:100%; min-width:82px; min-height:56px; border-radius:10px;
   border:2px solid var(--line); background:var(--paper-deep); color:var(--ink);
-  font-size:15px; font-weight:600; cursor:pointer;
+  font-size:17px; font-weight:600; cursor:pointer;
   transition:background .15s ease, border-color .15s ease, color .15s ease;
 }
 .avail-block-btn:hover{border-color:var(--teal);}
@@ -604,19 +604,35 @@ footer a:hover{color:#fff;}
 .avail-block-btn:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
 
 .avail-summary{
-  margin-top:18px; font-size:17px; color:var(--ink-soft); font-style:italic; line-height:1.5;
+  margin-top:18px; font-size:20px; color:var(--ink); line-height:1.5;
 }
 
 .slot-date-group{margin-bottom:22px;}
-.slot-date-group h3{font-size:17px; margin-bottom:10px; color:var(--ink);}
+.slot-date-group h3{font-size:19px; margin-bottom:10px; color:var(--ink);}
 .slot-options{display:flex; flex-wrap:wrap; gap:10px;}
 .slot-btn{
-  min-height:52px; padding:12px 22px; border-radius:12px; border:2px solid var(--line);
-  background:#fff; font-size:16px; font-weight:600; color:var(--ink); cursor:pointer;
+  min-height:56px; padding:12px 22px; border-radius:12px; border:2px solid var(--line);
+  background:#fff; font-size:18px; font-weight:600; color:var(--ink); cursor:pointer;
 }
 .slot-btn:hover{border-color:var(--teal);}
 .slot-btn.selected{background:var(--rust); border-color:var(--rust); color:#fff;}
 .slot-btn:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
+
+.inline-chat-box{
+  border:1px solid var(--line); border-radius:14px; background:#fff;
+  min-height:220px; max-height:360px; overflow-y:auto;
+  padding:18px; display:flex; flex-direction:column; gap:12px; margin-top:16px;
+}
+.inline-msg{max-width:80%; padding:12px 16px; border-radius:16px; font-size:19px; line-height:1.5;}
+.inline-msg.them{background:var(--paper-deep); align-self:flex-start; border-bottom-left-radius:4px; color:var(--ink);}
+.inline-msg.me{background:var(--teal); color:#fff; align-self:flex-end; border-bottom-right-radius:4px;}
+.inline-msg-meta{font-size:15px; font-weight:700; opacity:.8; margin-bottom:4px;}
+.inline-chat-input-row{display:flex; gap:10px; margin-top:14px;}
+.inline-chat-input-row input{
+  flex:1; border:2px solid var(--line); border-radius:999px; padding:14px 20px;
+  font-family:'Inter'; font-size:19px; color:var(--ink); min-height:52px;
+}
+.inline-chat-input-row input:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
 
 </style>
 </head>
@@ -642,28 +658,34 @@ footer a:hover{color:#fff;}
     <p>Everything about your match, in one place.</p>
   </div>
 
+  <div class="dash-card hidden" id="interviewStatusCard">
+    <span class="status-badge pending">Interview Pending Review</span>
+    <h2>Your Interview</h2>
+    <p>You're booked in with the CareQuest team. Once they confirm your interview, we'll start looking for your match.</p>
+  </div>
+
   <div class="dash-card hidden" id="noMatchCard">
     <h2>No Match Yet</h2>
     <p>We're finding the right match for you. Check back soon — we'll let you know as soon as it happens.</p>
   </div>
 
   <div class="dash-card hidden" id="matchInfoCard">
-    <span class="status-badge matched">🤝 Matched</span>
+    <span class="status-badge matched">Matched</span>
     <h2>Your Match</h2>
     <div class="match-card">
       <div class="match-avatar">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
       </div>
       <div>
-        <strong id="mpName" style="font-size:19px;">—</strong>
+        <strong id="mpName" style="font-size:22px;">—</strong>
         <div class="match-tags" id="mpTags"></div>
       </div>
     </div>
   </div>
 
   <div class="dash-card" id="availabilityCard">
-    <h2>🗓️ Your Weekly Availability</h2>
-    <p style="color:var(--ink-soft); font-size:16px;">Tap the times you're usually free every week. Once you're matched, this is what your match sees when booking a visit.</p>
+    <h2>Your Weekly Availability</h2>
+    <p style="color:var(--ink); font-size:20px;">Tap the times you're usually free every week. Once you're matched, this is what your match sees when booking a visit.</p>
     <div class="avail-grid-wrap">
       <table class="avail-grid-v2" id="availGridTable">
         <thead><tr><th></th></tr></thead>
@@ -672,35 +694,41 @@ footer a:hover{color:#fff;}
     </div>
     <p class="avail-summary" id="availSummary">Loading your availability…</p>
     <button type="button" class="btn btn-primary" id="saveAvailBtn" style="margin-top:8px;">Save Availability</button>
-    <p id="availSaveStatus" style="margin-top:10px; font-size:15px; color:var(--teal-deep); font-weight:700; display:none;">Saved ✓</p>
+    <p id="availSaveStatus" style="margin-top:10px; font-size:18px; color:var(--teal-deep); font-weight:700; display:none;">Saved</p>
   </div>
 
-  <a href="messages" class="dash-card hidden" id="messagesPreviewCard" style="text-decoration:none; color:inherit; display:block;">
-    <h2>💬 Messages</h2>
-    <p id="messagePreviewText" style="color:var(--ink-soft); font-size:16px;">No messages yet — say hello!</p>
-  </a>
-
   <div class="dash-card hidden" id="upcomingVisitCard">
-    <span class="status-badge verified">✓ Visit Scheduled</span>
-    <h2>📅 Upcoming Visit</h2>
-    <p id="upcomingVisitText" style="font-size:18px; font-weight:600;">—</p>
+    <span class="status-badge verified">Visit Scheduled</span>
+    <h2>Upcoming Visit</h2>
+    <p id="upcomingVisitText" style="font-size:20px; font-weight:600;">—</p>
     <button type="button" class="btn btn-outline" id="cancelVisitBtn" style="margin-top:10px;">Cancel Visit</button>
   </div>
 
   <div class="dash-card hidden" id="scheduleCard">
-    <h2>📅 Schedule a Visit</h2>
-    <p id="scheduleIntroText" style="color:var(--ink-soft); font-size:16px;">No visit scheduled yet.</p>
+    <h2>Schedule a Visit</h2>
+    <p id="scheduleIntroText" style="color:var(--ink); font-size:20px;">No visit scheduled yet.</p>
     <button type="button" class="btn btn-primary" id="scheduleVisitBtn">Schedule a Visit</button>
     <div class="hidden" id="slotPicker" style="margin-top:22px;">
-      <p id="slotPickerStatus" style="font-size:16px; color:var(--ink-soft);">Finding times that work for both of you…</p>
+      <p id="slotPickerStatus" style="font-size:20px; color:var(--ink);">Finding times that work for both of you…</p>
       <div id="slotList"></div>
       <button type="button" class="btn btn-primary hidden" id="confirmVisitBtn" style="margin-top:10px;" disabled>Confirm Visit</button>
     </div>
   </div>
 
-  <div style="text-align:center; margin-top:8px;">
-    <a href="#" id="dashboardLink" class="btn btn-outline">Go to your full dashboard →</a>
+  <div class="dash-card hidden" id="inlineChatCard">
+    <h2>Messages</h2>
+    <p style="color:var(--ink); font-size:20px;">Recent messages with your match.</p>
+    <div class="inline-chat-box" id="inlineChatBox"></div>
+    <div class="inline-chat-input-row">
+      <input type="text" id="inlineChatInput" placeholder="Type a message…">
+      <button type="button" class="btn btn-primary" id="inlineChatSendBtn">Send</button>
+    </div>
+    <p style="margin-top:14px;"><a href="messages" style="color:var(--teal); font-weight:700; text-decoration:none; font-size:18px;">See full message history →</a></p>
   </div>
+
+  <p style="text-align:center; margin-top:20px;">
+    <a href="#" id="dashboardLink" style="color:var(--ink); font-size:16px; text-decoration:underline;">Go to full dashboard</a>
+  </p>
 </div>
 
 <script>
@@ -1015,7 +1043,7 @@ footer a:hover{color:#fff;}
       return;
     }
 
-    const messageBody = '📅 Visit scheduled for ' + selectedSlot.startLocal.toFormat('cccc, LLLL d') + ' at ' + selectedSlot.label + '.';
+    const messageBody = 'Visit scheduled for ' + selectedSlot.startLocal.toFormat('cccc, LLLL d') + ' at ' + selectedSlot.label + '.';
     await cq.from('messages').insert({ match_id: currentMatchId, sender_id: currentUserId, body: messageBody });
 
     document.getElementById('slotPicker').classList.add('hidden');
@@ -1045,7 +1073,7 @@ footer a:hover{color:#fff;}
     await cq.from('messages').insert({
       match_id: currentMatchId,
       sender_id: currentUserId,
-      body: '❌ The visit on ' + when + ' was cancelled.'
+      body: 'The visit on ' + when + ' was cancelled.'
     });
 
     await refreshUpcomingVisit();
@@ -1080,11 +1108,91 @@ footer a:hover{color:#fff;}
     }
   }
 
+  // ---------------------------------------------------------
+  // Inline message thread — recent messages only. The full history
+  // still lives on messages.html; this is just a live-updating window
+  // onto the same `messages` table so members don't have to leave this
+  // page for a quick reply.
+  // ---------------------------------------------------------
+  const inlineRenderedIds = new Set();
+  const RECENT_MESSAGE_COUNT = 20;
+
+  function appendInlineMessage(msg){
+    if(inlineRenderedIds.has(msg.id)) return;
+    inlineRenderedIds.add(msg.id);
+
+    const isMe = msg.sender_id === currentUserId;
+    const time = new Date(msg.created_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
+    const wrap = document.createElement('div');
+    wrap.className = 'inline-msg ' + (isMe ? 'me' : 'them');
+
+    const meta = document.createElement('div');
+    meta.className = 'inline-msg-meta';
+    meta.textContent = (isMe ? 'You' : partnerNameGlobal) + ' · ' + time;
+
+    const body = document.createElement('div');
+    body.textContent = msg.body;
+
+    wrap.appendChild(meta);
+    wrap.appendChild(body);
+
+    const box = document.getElementById('inlineChatBox');
+    box.appendChild(wrap);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  async function loadRecentMessages(matchId){
+    const { data: msgs } = await cq
+      .from('messages')
+      .select('id, sender_id, body, created_at')
+      .eq('match_id', matchId)
+      .order('created_at', { ascending: false })
+      .limit(RECENT_MESSAGE_COUNT);
+
+    (msgs || []).slice().reverse().forEach(appendInlineMessage);
+  }
+
+  function subscribeToInlineMessages(matchId){
+    cq.channel('member-messages-' + matchId)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: 'match_id=eq.' + matchId
+      }, payload => appendInlineMessage(payload.new))
+      .subscribe();
+  }
+
+  async function sendInlineMessage(){
+    const input = document.getElementById('inlineChatInput');
+    const body = input.value.trim();
+    if(!body || !currentMatchId) return;
+    input.value = '';
+
+    const { data, error } = await cq
+      .from('messages')
+      .insert({ match_id: currentMatchId, sender_id: currentUserId, body })
+      .select()
+      .single();
+
+    if(error){
+      console.error('Could not send message:', error);
+      alert('Could not send that message. Please try again.');
+      return;
+    }
+    appendInlineMessage(data);
+  }
+
   buildAvailabilityGrid();
   document.getElementById('saveAvailBtn').addEventListener('click', saveAvailability);
   document.getElementById('scheduleVisitBtn').addEventListener('click', handleScheduleClick);
   document.getElementById('confirmVisitBtn').addEventListener('click', handleConfirmVisit);
   document.getElementById('cancelVisitBtn').addEventListener('click', handleCancelVisit);
+  document.getElementById('inlineChatSendBtn').addEventListener('click', sendInlineMessage);
+  document.getElementById('inlineChatInput').addEventListener('keydown', e => {
+    if(e.key === 'Enter') sendInlineMessage();
+  });
 
   async function loadMember(){
     const { data: { session } } = await cq.auth.getSession();
@@ -1094,13 +1202,16 @@ footer a:hover{color:#fff;}
     }
     currentUserId = session.user.id;
 
-    const { data: youthProfile } = await cq.from('youth_profiles').select('first_name').eq('id', session.user.id).maybeSingle();
+    const { data: youthProfile } = await cq.from('youth_profiles').select('first_name, interview_status').eq('id', session.user.id).maybeSingle();
     let role, displayFirstName;
 
     if(youthProfile){
       role = 'youth';
       displayFirstName = youthProfile.first_name;
       document.getElementById('dashboardLink').href = 'youth-dashboard';
+      if(youthProfile.interview_status !== 'verified'){
+        document.getElementById('interviewStatusCard').classList.remove('hidden');
+      }
     } else {
       const { data: seniorProfile } = await cq.from('senior_profiles').select('full_name').eq('id', session.user.id).maybeSingle();
       role = 'senior';
@@ -1135,7 +1246,7 @@ footer a:hover{color:#fff;}
     partnerIdGlobal = match.youth_id === currentUserId ? match.senior_id : match.youth_id;
 
     document.getElementById('matchInfoCard').classList.remove('hidden');
-    document.getElementById('messagesPreviewCard').classList.remove('hidden');
+    document.getElementById('inlineChatCard').classList.remove('hidden');
 
     const { data: partner } = await cq.rpc('get_match_partner', { p_match_id: match.id });
     if(partner && partner[0]){
@@ -1151,20 +1262,8 @@ footer a:hover{color:#fff;}
     }
 
     await refreshUpcomingVisit();
-
-    const { data: lastMsg } = await cq
-      .from('messages')
-      .select('sender_id, body, created_at')
-      .eq('match_id', match.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if(lastMsg){
-      const who = lastMsg.sender_id === session.user.id ? 'You' : partnerNameGlobal;
-      const snippet = lastMsg.body.length > 90 ? lastMsg.body.slice(0, 90) + '…' : lastMsg.body;
-      document.getElementById('messagePreviewText').textContent = who + ': "' + snippet + '"';
-    }
+    await loadRecentMessages(currentMatchId);
+    subscribeToInlineMessages(currentMatchId);
   }
 
   loadMember();
