@@ -6,10 +6,6 @@
 <title>Your Bookings — CareQuest</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@^2.49.4/dist/umd/supabase.js"></script>
 <script src="js/supabaseClient.js"></script>
-<script type="text/javascript">
-  (function (C, A, L) { let p = function (a, ar) { a.q.push(ar); }; let d = C.document; C.Cal = C.Cal || function () { let cal = C.Cal; let ar = arguments; if (!cal.loaded) { cal.ns = {}; cal.q = cal.q || []; d.head.appendChild(d.createElement("script")).src = A; cal.loaded = true; } if (ar[0] === L) { const api = function () { p(api, arguments); }; const namespace = ar[1]; api.q = api.q || []; if(typeof namespace === "string"){cal.ns[namespace] = cal.ns[namespace] || api;p(cal.ns[namespace], ar);p(cal, ["initNamespace", namespace]);} else p(cal, ar); return;} p(cal, ar); }; })(window, "https://app.cal.com/embed/embed.js", "init");
-  Cal("init", { origin: "https://cal.com" });
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -635,9 +631,9 @@ footer a:hover{color:#fff;}
   </div>
 
   <div class="dash-card hidden" id="bookCard">
-    <h2>Book a Time with <span id="bookPartnerName">your match</span></h2>
-    <p>Pick a time below — this books directly on our shared calendar.</p>
-    <div id="cal-embed" style="width:100%; height:600px; overflow:auto;"></div>
+    <h2>No Visit Scheduled Yet</h2>
+    <p>Head to your CareQuest page to set your availability and find a time that works for both of you.</p>
+    <a href="member" class="btn btn-primary" style="margin-top:10px;">Schedule a Visit →</a>
   </div>
 
   <div class="dash-card hidden" id="bookedCard">
@@ -672,7 +668,7 @@ footer a:hover{color:#fff;}
 
     const { data: match } = await cq
       .from('matches')
-      .select('id, scheduled_at')
+      .select('id')
       .eq('senior_id', session.user.id)
       .eq('status', 'active')
       .maybeSingle();
@@ -695,23 +691,23 @@ footer a:hover{color:#fff;}
         tagsEl.appendChild(span);
       });
     }
-    document.getElementById('bookPartnerName').textContent = partnerName;
 
-    if(match.scheduled_at){
-      const when = new Date(match.scheduled_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    const { data: nextVisit } = await cq
+      .from('visits')
+      .select('scheduled_at')
+      .eq('match_id', match.id)
+      .eq('status', 'scheduled')
+      .gt('scheduled_at', new Date().toISOString())
+      .order('scheduled_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if(nextVisit){
+      const when = new Date(nextVisit.scheduled_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
       document.getElementById('bookedNote').textContent = 'Your visit with ' + partnerName + ' is booked for ' + when + '. You can message or start a video call any time before then.';
       document.getElementById('bookedCard').classList.remove('hidden');
     } else {
       document.getElementById('bookCard').classList.remove('hidden');
-      // Replace "carequest/visit" with your real Cal.com event type link.
-      Cal("inline", {
-        elementOrSelector: "#cal-embed",
-        calLink: "carequest/visit",
-        config: {
-          theme: "light",
-          metadata: { matchId: match.id }
-        }
-      });
     }
   }
 

@@ -231,3 +231,143 @@ exception
   when others then
     raise notice 'messages may already be in the supabase_realtime publication: %', sqlerrm;
 end $$;
+
+-- =========================================================
+-- Scheduling: availability, visits, and RLS
+--
+-- Run just this section if the tables/policies above are already
+-- applied — every statement here is safe to re-run on its own.
+-- =========================================================
+
+-- is_matched_with: SECURITY DEFINER helper so availability's SELECT
+-- policy can check "is this row's owner someone I'm matched with?"
+-- without ever granting a broader SELECT policy on matches or on the
+-- other role's profile table (same narrow-exception pattern as
+-- is_staff() and get_match_partner() above).
+create or replace function public.is_matched_with(p_other_user uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.matches m
+    where (m.youth_id = auth.uid() and m.senior_id = p_other_user)
+       or (m.senior_id = auth.uid() and m.youth_id = p_other_user)
+  );
+$$;
+
+grant execute on function public.is_matched_with(uuid) to authenticated;
+
+-- One row per recurring weekly time block a user marks themselves free.
+-- day_of_week: 0 = Sunday .. 6 = Saturday (matches JS Date#getDay()).
+create table if not exists public.availability (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  day_of_week smallint not null check (day_of_week between 0 and 6),
+  start_time time not null,
+  end_time time not null,
+  created_at timestamptz not null default now(),
+  check (end_time > start_time)
+);
+
+create index if not exists availability_user_id_idx on public.availability (user_id);
+
+alter table public.availability enable row level security;
+
+-- A user reads their own rows (to render their own grid) plus their
+-- matched partner's rows (to compute overlap when booking) — nobody
+-- else's, and never the full list of either role.
+drop policy if exists "read own or matched availability" on public.availability;
+create policy "read own or matched availability"
+  on public.availability for select
+  using (auth.uid() = user_id or public.is_matched_with(user_id));
+
+drop policy if exists "manage own availability insert" on public.availability;
+create policy "manage own availability insert"
+  on public.availability for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "manage own availability update" on public.availability;
+create policy "manage own availability update"
+  on public.availability for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "manage own availability delete" on public.availability;
+create policy "manage own availability delete"
+  on public.availability for delete
+  using (auth.uid() = user_id);
+
+-- One row per booked (or cancelled/completed) visit between a match's
+-- two people. scheduled_at is always stored in UTC — the app assumes
+-- America/Vancouver wall-clock time when generating and displaying
+-- slots, so correcting that assumption later (per-user timezones) is
+-- a display/generation-layer change, not a data migration.
+create table if not exists public.visits (
+  id uuid primary key default gen_random_uuid(),
+  match_id uuid not null references public.matches (id) on delete cascade,
+  scheduled_at timestamptz not null,
+  duration_minutes int not null default 120 check (duration_minutes > 0),
+  created_by uuid not null references auth.users (id),
+  status text not null default 'scheduled' check (status in ('scheduled', 'cancelled', 'completed')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists visits_match_id_scheduled_at_idx on public.visits (match_id, scheduled_at);
+
+alter table public.visits enable row level security;
+
+drop policy if exists "participants can read visits" on public.visits;
+create policy "participants can read visits"
+  on public.visits for select
+  using (exists (
+    select 1 from public.matches m
+    where m.id = visits.match_id
+      and (m.youth_id = auth.uid() or m.senior_id = auth.uid())
+  ));
+
+drop policy if exists "participants can create visits" on public.visits;
+create policy "participants can create visits"
+  on public.visits for insert
+  with check (
+    created_by = auth.uid()
+    and exists (
+      select 1 from public.matches m
+      where m.id = visits.match_id
+        and (m.youth_id = auth.uid() or m.senior_id = auth.uid())
+    )
+  );
+
+-- Either participant can cancel a scheduled visit — but this policy
+-- only ever allows flipping status to 'cancelled'. It can't be used to
+-- edit the time/duration or to un-cancel a visit.
+drop policy if exists "participants can cancel visits" on public.visits;
+create policy "participants can cancel visits"
+  on public.visits for update
+  using (
+    status = 'scheduled'
+    and exists (
+      select 1 from public.matches m
+      where m.id = visits.match_id
+        and (m.youth_id = auth.uid() or m.senior_id = auth.uid())
+    )
+  )
+  with check (
+    status = 'cancelled'
+    and exists (
+      select 1 from public.matches m
+      where m.id = visits.match_id
+        and (m.youth_id = auth.uid() or m.senior_id = auth.uid())
+    )
+  );
+
+-- Deliberately no delete policy on visits — the booking/cancellation
+-- history is kept permanently.
+
+-- NOTE ON matches.scheduled_at: this migration does not add a trigger
+-- to keep matches.scheduled_at in sync with visits. The app instead
+-- looks up "the next upcoming visit" directly from public.visits
+-- (status = 'scheduled', scheduled_at > now(), ordered ascending) —
+-- one source of truth, no denormalization to keep consistent.

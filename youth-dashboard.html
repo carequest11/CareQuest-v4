@@ -703,7 +703,7 @@ footer a:hover{color:#fff;}
 
     const { data: match } = await cq
       .from('matches')
-      .select('id, scheduled_at')
+      .select('id')
       .eq('youth_id', session.user.id)
       .eq('status', 'active')
       .maybeSingle();
@@ -724,8 +724,18 @@ footer a:hover{color:#fff;}
         });
       }
 
-      if(match.scheduled_at){
-        const when = new Date(match.scheduled_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+      const { data: nextVisit } = await cq
+        .from('visits')
+        .select('scheduled_at')
+        .eq('match_id', match.id)
+        .eq('status', 'scheduled')
+        .gt('scheduled_at', new Date().toISOString())
+        .order('scheduled_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if(nextVisit){
+        const when = new Date(nextVisit.scheduled_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
         document.getElementById('matchVisitNote').textContent = 'Your visit is booked for ' + when + '. You can message or video call any time before then.';
       }
     }
