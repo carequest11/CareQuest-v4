@@ -639,12 +639,61 @@ footer a:hover{color:#fff;}
 </div>
 
 <script>
+  // Supabase can take a moment to restore a persisted session from
+  // localStorage right after a fresh page load. A bare getSession()
+  // call immediately after the client is constructed can race that
+  // restore and briefly report "no session" even when one exists.
+  // Listening for the INITIAL_SESSION auth event is Supabase's own
+  // documented way to know the restore attempt has actually finished,
+  // so redirect decisions here wait for that instead of trusting the
+  // very first getSession() result. A getSession() fallback after a
+  // short timeout keeps this from hanging if that event is ever missed.
+  function waitForInitialSession(){
+    return new Promise(resolve => {
+      let settled = false;
+      const { data: sub } = cq.auth.onAuthStateChange((event, session) => {
+        if(event === 'INITIAL_SESSION' && !settled){
+          settled = true;
+          sub.subscription.unsubscribe();
+          resolve(session);
+        }
+      });
+      setTimeout(async () => {
+        if(settled) return;
+        settled = true;
+        sub.subscription.unsubscribe();
+        const { data: { session } } = await cq.auth.getSession();
+        resolve(session);
+      }, 2000);
+    });
+  }
+
   // Nobody should have to re-authenticate when they already have a
   // valid session — send them straight to their member page instead
   // of showing the login form again.
+  //
+  // Guard: if member.html just sent us here (it thought there was no
+  // session), and our own check now disagrees and says there IS one,
+  // don't immediately bounce back — that contradiction is exactly how
+  // a login <-> member redirect loop forms. Re-confirm once, briefly,
+  // before trusting it.
   (async () => {
-    const { data: { session } } = await cq.auth.getSession();
+    const cameFromMember = sessionStorage.getItem('cq_redirected_from') === 'member'
+      && Date.now() - Number(sessionStorage.getItem('cq_redirected_at') || 0) < 5000;
+
+    let session = await waitForInitialSession();
+
+    if(session && cameFromMember){
+      await new Promise(r => setTimeout(r, 300));
+      const { data: { session: recheck } } = await cq.auth.getSession();
+      session = recheck;
+    }
+    sessionStorage.removeItem('cq_redirected_from');
+    sessionStorage.removeItem('cq_redirected_at');
+
     if(session){
+      sessionStorage.setItem('cq_redirected_from', 'login');
+      sessionStorage.setItem('cq_redirected_at', String(Date.now()));
       window.location.href = 'member';
     }
   })();
@@ -690,6 +739,8 @@ footer a:hover{color:#fff;}
     }
 
     sessionStorage.setItem('cq_role', isYouth ? 'youth' : 'senior');
+    sessionStorage.setItem('cq_redirected_from', 'login');
+    sessionStorage.setItem('cq_redirected_at', String(Date.now()));
     window.location.href = 'member';
   }
 </script>

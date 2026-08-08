@@ -1262,102 +1262,167 @@ footer a:hover{color:#fff;}
   });
   document.getElementById('avatarFileInput').addEventListener('change', handleAvatarUpload);
 
+  // Supabase can take a moment to restore a persisted session from
+  // localStorage right after a fresh page load. A bare getSession()
+  // call immediately after the client is constructed can race that
+  // restore and briefly report "no session" even when one exists.
+  // Listening for the INITIAL_SESSION auth event is Supabase's own
+  // documented way to know the restore attempt has actually finished,
+  // so the redirect decision below waits for that instead of trusting
+  // the very first getSession() result. A getSession() fallback after
+  // a short timeout keeps this from hanging if that event is ever missed.
+  function waitForInitialSession(){
+    return new Promise(resolve => {
+      let settled = false;
+      const { data: sub } = cq.auth.onAuthStateChange((event, session) => {
+        if(event === 'INITIAL_SESSION' && !settled){
+          settled = true;
+          sub.subscription.unsubscribe();
+          resolve(session);
+        }
+      });
+      setTimeout(async () => {
+        if(settled) return;
+        settled = true;
+        sub.subscription.unsubscribe();
+        const { data: { session } } = await cq.auth.getSession();
+        resolve(session);
+      }, 2000);
+    });
+  }
+
+  function showLoadError(message){
+    const p = document.querySelector('.dash-greeting p');
+    if(p) p.textContent = message;
+  }
+
   async function loadMember(){
-    const { data: { session } } = await cq.auth.getSession();
+    // Guard: if login.html just sent us here (it thought there WAS a
+    // session), and our own check now disagrees and says there isn't
+    // one, don't immediately bounce back — that contradiction is
+    // exactly how a login <-> member redirect loop forms. Re-confirm
+    // once, briefly, before trusting it.
+    const cameFromLogin = sessionStorage.getItem('cq_redirected_from') === 'login'
+      && Date.now() - Number(sessionStorage.getItem('cq_redirected_at') || 0) < 5000;
+
+    let session = await waitForInitialSession();
+
+    if(!session && cameFromLogin){
+      await new Promise(r => setTimeout(r, 300));
+      const { data: { session: recheck } } = await cq.auth.getSession();
+      session = recheck;
+    }
+    sessionStorage.removeItem('cq_redirected_from');
+    sessionStorage.removeItem('cq_redirected_at');
+
     if(!session){
+      sessionStorage.setItem('cq_redirected_from', 'member');
+      sessionStorage.setItem('cq_redirected_at', String(Date.now()));
       window.location.href = 'login';
       return;
     }
     currentUserId = session.user.id;
 
-    // Look up both profile tables explicitly rather than assuming
-    // youth-first-else-senior: falling back to "senior" whenever the
-    // youth lookup comes back empty (for any reason — RLS hiccup,
-    // network blip, etc.) would silently misclassify a real youth,
-    // point the matches query at the wrong column, and show
-    // "No Match Yet" even when a match genuinely exists.
-    const [{ data: youthProfile, error: youthProfileErr }, { data: seniorProfile, error: seniorProfileErr }] = await Promise.all([
-      cq.from('youth_profiles').select('first_name, interview_status, avatar_url').eq('id', session.user.id).maybeSingle(),
-      cq.from('senior_profiles').select('full_name, avatar_url').eq('id', session.user.id).maybeSingle()
-    ]);
+    try {
+      // Look up both profile tables explicitly rather than assuming
+      // youth-first-else-senior: falling back to "senior" whenever the
+      // youth lookup comes back empty (for any reason — RLS hiccup,
+      // network blip, etc.) would silently misclassify a real youth,
+      // point the matches query at the wrong column, and show
+      // "No Match Yet" even when a match genuinely exists.
+      const [{ data: youthProfile, error: youthProfileErr }, { data: seniorProfile, error: seniorProfileErr }] = await Promise.all([
+        cq.from('youth_profiles').select('first_name, interview_status, avatar_url').eq('id', session.user.id).maybeSingle(),
+        cq.from('senior_profiles').select('full_name, avatar_url').eq('id', session.user.id).maybeSingle()
+      ]);
 
-    if(youthProfileErr) console.error('youth_profiles lookup failed:', youthProfileErr);
-    if(seniorProfileErr) console.error('senior_profiles lookup failed:', seniorProfileErr);
+      if(youthProfileErr) console.error('youth_profiles lookup failed:', youthProfileErr);
+      if(seniorProfileErr) console.error('senior_profiles lookup failed:', seniorProfileErr);
 
-    let role, displayFirstName, myAvatarUrl;
+      let role, displayFirstName, myAvatarUrl;
 
-    if(youthProfile){
-      role = 'youth';
-      displayFirstName = youthProfile.first_name;
-      myAvatarUrl = youthProfile.avatar_url;
-      if(youthProfile.interview_status !== 'verified'){
-        document.getElementById('interviewStatusCard').classList.remove('hidden');
+      if(youthProfile){
+        role = 'youth';
+        displayFirstName = youthProfile.first_name;
+        myAvatarUrl = youthProfile.avatar_url;
+        if(youthProfile.interview_status !== 'verified'){
+          document.getElementById('interviewStatusCard').classList.remove('hidden');
+        }
+      } else if(seniorProfile){
+        role = 'senior';
+        displayFirstName = seniorProfile.full_name.split(' ')[0];
+        myAvatarUrl = seniorProfile.avatar_url;
+      } else {
+        // A genuinely signed-in user with no profile row at all is a
+        // real account problem, not "you're not logged in" — redirecting
+        // to login here would just recreate the same kind of loop this
+        // whole function exists to avoid. Log it and say so on the page.
+        console.error('No youth_profiles or senior_profiles row found for this signed-in user:', session.user.id, { youthProfileErr, seniorProfileErr });
+        showLoadError("We couldn't find your profile. Please contact CareQuest support.");
+        return;
       }
-    } else if(seniorProfile){
-      role = 'senior';
-      displayFirstName = seniorProfile.full_name.split(' ')[0];
-      myAvatarUrl = seniorProfile.avatar_url;
-    } else {
-      console.error('No youth_profiles or senior_profiles row found for this signed-in user:', session.user.id);
-      window.location.href = 'login';
-      return;
-    }
-    currentRole = role;
+      currentRole = role;
 
-    if(myAvatarUrl){
-      renderAvatarPreview(document.getElementById('myAvatarPreview'), myAvatarUrl);
-    }
-
-    document.getElementById('memberGreeting').textContent = 'Welcome back, ' + displayFirstName;
-
-    const { data: availRows } = await cq
-      .from('availability')
-      .select('day_of_week, start_time, end_time')
-      .eq('user_id', currentUserId);
-    myAvailability = availRows || [];
-    applyAvailabilityToGrid(myAvailability);
-    updateAvailabilitySummary();
-
-    const filterCol = role === 'youth' ? 'youth_id' : 'senior_id';
-    const { data: match, error: matchErr } = await cq
-      .from('matches')
-      .select('id, youth_id, senior_id')
-      .eq(filterCol, session.user.id)
-      .eq('status', 'active')
-      .maybeSingle();
-
-    if(matchErr) console.error('matches lookup failed for', filterCol, '=', session.user.id, matchErr);
-
-    if(!match){
-      document.getElementById('noMatchCard').classList.remove('hidden');
-      return;
-    }
-
-    currentMatchId = match.id;
-    partnerIdGlobal = match.youth_id === currentUserId ? match.senior_id : match.youth_id;
-
-    document.getElementById('matchInfoCard').classList.remove('hidden');
-    document.getElementById('inlineChatCard').classList.remove('hidden');
-
-    const { data: partner } = await cq.rpc('get_match_partner', { p_match_id: match.id });
-    if(partner && partner[0]){
-      partnerNameGlobal = partner[0].display_name;
-      document.getElementById('mpName').textContent = partnerNameGlobal;
-      const tagsEl = document.getElementById('mpTags');
-      tagsEl.innerHTML = '';
-      (partner[0].interests || '').split(',').map(s => s.trim()).filter(Boolean).forEach(tag => {
-        const span = document.createElement('span');
-        span.textContent = tag;
-        tagsEl.appendChild(span);
-      });
-      if(partner[0].avatar_url){
-        renderAvatarPreview(document.getElementById('mpAvatar'), partner[0].avatar_url);
+      if(myAvatarUrl){
+        renderAvatarPreview(document.getElementById('myAvatarPreview'), myAvatarUrl);
       }
-    }
 
-    await refreshUpcomingVisit();
-    await loadRecentMessages(currentMatchId);
-    subscribeToInlineMessages(currentMatchId);
+      document.getElementById('memberGreeting').textContent = 'Welcome back, ' + displayFirstName;
+
+      const { data: availRows } = await cq
+        .from('availability')
+        .select('day_of_week, start_time, end_time')
+        .eq('user_id', currentUserId);
+      myAvailability = availRows || [];
+      applyAvailabilityToGrid(myAvailability);
+      updateAvailabilitySummary();
+
+      const filterCol = role === 'youth' ? 'youth_id' : 'senior_id';
+      const { data: match, error: matchErr } = await cq
+        .from('matches')
+        .select('id, youth_id, senior_id')
+        .eq(filterCol, session.user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if(matchErr) console.error('matches lookup failed for', filterCol, '=', session.user.id, matchErr);
+
+      if(!match){
+        document.getElementById('noMatchCard').classList.remove('hidden');
+        return;
+      }
+
+      currentMatchId = match.id;
+      partnerIdGlobal = match.youth_id === currentUserId ? match.senior_id : match.youth_id;
+
+      document.getElementById('matchInfoCard').classList.remove('hidden');
+      document.getElementById('inlineChatCard').classList.remove('hidden');
+
+      const { data: partner } = await cq.rpc('get_match_partner', { p_match_id: match.id });
+      if(partner && partner[0]){
+        partnerNameGlobal = partner[0].display_name;
+        document.getElementById('mpName').textContent = partnerNameGlobal;
+        const tagsEl = document.getElementById('mpTags');
+        tagsEl.innerHTML = '';
+        (partner[0].interests || '').split(',').map(s => s.trim()).filter(Boolean).forEach(tag => {
+          const span = document.createElement('span');
+          span.textContent = tag;
+          tagsEl.appendChild(span);
+        });
+        if(partner[0].avatar_url){
+          renderAvatarPreview(document.getElementById('mpAvatar'), partner[0].avatar_url);
+        }
+      }
+
+      await refreshUpcomingVisit();
+      await loadRecentMessages(currentMatchId);
+      subscribeToInlineMessages(currentMatchId);
+    } catch (err){
+      // Any unexpected failure in the above must never redirect —
+      // that's exactly how an error condition turns into an infinite
+      // login <-> member bounce. Log it and tell the user plainly instead.
+      console.error('loadMember failed:', err);
+      showLoadError('Something went wrong loading your page. Please refresh and try again.');
+    }
   }
 
   loadMember();
