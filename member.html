@@ -80,7 +80,7 @@ header.site{
 }
 .nav{
   display:flex; align-items:center; justify-content:space-between;
-  padding:16px 0; flex-wrap:wrap; row-gap:10px;
+  padding:16px 0;
 }
 .logo{
   display:flex; align-items:center; gap:10px;
@@ -91,7 +91,7 @@ header.site{
   width:38px;height:38px;object-fit:contain;flex-shrink:0;
   filter:drop-shadow(0 2px 2px rgba(0,0,0,.08));
 }
-.navlinks{display:flex;align-items:center;gap:28px;font-weight:600;font-size:16px; flex-wrap:wrap;}
+.navlinks{display:flex;align-items:center;gap:28px;font-weight:600;font-size:16px;}
 .navlinks a{text-decoration:none;color:var(--ink-soft);}
 .navlinks a:hover{color:var(--teal);}
 .navlinks a.nav-login{
@@ -104,7 +104,7 @@ header.site{
   font-weight:600; color:var(--ink-soft); text-decoration:none; font-size:15px;
 }
 .back-link:hover{color:var(--teal);}
-.header-actions{display:flex;align-items:center;gap:18px; flex-wrap:wrap; row-gap:8px;}
+.header-actions{display:flex;align-items:center;gap:18px;}
 .login-link{
   display:inline-flex; align-items:center; gap:6px;
   font-weight:700; color:var(--teal); text-decoration:none; font-size:15px;
@@ -112,12 +112,6 @@ header.site{
 }
 .login-link:hover{background:var(--teal); color:#fff;}
 @media (max-width:780px){ .navlinks{display:none;} }
-@media (max-width:600px){
-  .wrap{padding:0 18px;}
-  .logo{font-size:19px; gap:8px;}
-  .logo-mark{width:32px;height:32px;}
-  .header-actions{gap:10px;}
-}
 
 /* ===================================================
    INDEX / SINGLE-VIEW HOME PAGE
@@ -319,18 +313,15 @@ html.home-lock, body.home-lock{
 .day-tab{
   padding:10px 16px; border-radius:10px; border:2px solid var(--line);
   background:var(--paper-deep); color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;
-  min-height:44px; display:inline-flex; align-items:center;
 }
 .day-tab.active{background:var(--teal); border-color:var(--teal); color:#fff;}
 .slot-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
 .slot{
   padding:14px 10px; border-radius:10px; border:2px solid var(--line);
   background:var(--paper-deep); color:var(--ink); font-size:15px; font-weight:600; text-align:center; cursor:pointer;
-  min-height:52px; display:flex; align-items:center; justify-content:center;
 }
 .slot.selected{background:var(--rust); border-color:var(--rust); color:#fff;}
 .slot.disabled{opacity:.35; cursor:not-allowed;}
-@media (max-width:420px){ .slot-grid{grid-template-columns:1fr;} }
 
 .acct-submit-row{
   margin-top:28px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
@@ -365,12 +356,6 @@ html.home-lock, body.home-lock{
 }
 .login-help a{color:var(--teal); font-weight:700; text-decoration:none;}
 .login-help a:hover{text-decoration:underline;}
-@media (max-width:600px){
-  .acct-shell{padding:28px 16px 56px;}
-  .acct-card{padding:24px 20px; border-radius:16px;}
-  .login-shell{padding:32px 16px 56px;}
-  .login-card{padding:24px 20px; border-radius:16px;}
-}
 
 /* ===================================================
    ABOUT / HOW IT WORKS PAGE
@@ -413,10 +398,6 @@ section.about-section{padding:80px 0;}
 @media (max-width:880px){
   .route-line{display:none;}
   .route-steps{grid-template-columns:1fr 1fr; gap:36px 20px;}
-}
-@media (max-width:600px){
-  .route-steps{grid-template-columns:1fr; gap:32px;}
-  .step-icon{width:76px;height:76px;}
 }
 
 .testimonial-wrap{
@@ -487,24 +468,6 @@ footer a:hover{color:#fff;}
 .dash-card h2{font-size:19px; margin-bottom:6px; display:flex; align-items:center; gap:10px;}
 .dash-card p{color:var(--ink-soft); font-size:15px; margin:0;}
 .dash-card.locked{background:var(--paper-deep); border-style:dashed;}
-@media (max-width:600px){
-  .dash-shell{padding:28px 16px 56px;}
-  .dash-card{padding:20px 18px; border-radius:14px;}
-}
-/* On wide screens, split the stack into two columns — match/profile info
-   next to availability + scheduling + chat — instead of one long stack.
-   .dash-col is just a layout wrapper; card order inside each column
-   matches the original single-column stacking order, so narrower
-   screens (where this rule doesn't apply) see the exact same order
-   as before. */
-@media (min-width:1000px){
-  .dash-shell{
-    max-width:1100px; display:grid;
-    grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);
-    align-items:start; gap:24px;
-  }
-  .dash-col{min-width:0;}
-}
 .lock-icon{
   width:34px;height:34px;border-radius:50%;background:#fff;border:1.5px solid var(--line);
   display:flex;align-items:center;justify-content:center; flex-shrink:0;
@@ -525,25 +488,15 @@ footer a:hover{color:#fff;}
 .hidden{display:none !important;}
 
 .avail-grid{
-  display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:14px; margin-top:16px;
+  display:grid; grid-template-columns:90px repeat(7,1fr); gap:4px; margin-top:16px; font-size:13px;
 }
-.avail-day{
-  background:var(--paper-deep); border:1.5px solid var(--line); border-radius:12px; padding:14px;
-}
-.avail-day-name{font-size:15px; font-weight:700; color:var(--ink); margin:0 0 10px;}
-.avail-day-slots{display:flex; flex-direction:column; gap:8px;}
+.avail-grid .head{font-weight:700; text-align:center; padding:6px 2px; color:var(--ink-soft);}
+.avail-grid .rowlabel{font-weight:600; display:flex; align-items:center; color:var(--ink-soft);}
 .avail-cell{
-  min-height:44px; border-radius:8px; background:#fff;
+  aspect-ratio:1.3; border-radius:6px; background:var(--paper-deep);
   border:1.5px solid var(--line); cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  font-size:14px; font-weight:600; color:var(--ink-soft);
 }
-.avail-cell.selected{background:var(--teal); border-color:var(--teal); color:#fff;}
-@media (max-width:600px){
-  .avail-grid{grid-template-columns:repeat(2,1fr);}
-  .avail-day-slots{flex-direction:row; flex-wrap:wrap;}
-  .avail-cell{flex:1 1 70px;}
-}
+.avail-cell.selected{background:var(--teal); border-color:var(--teal);}
 
 .match-card{display:flex; gap:16px; align-items:center;}
 .match-avatar{
@@ -584,7 +537,6 @@ footer a:hover{color:#fff;}
 .chat-header{
   display:flex; align-items:center; justify-content:space-between; gap:16px;
   background:#fff; border:1px solid var(--line); border-radius:16px 16px 0 0; padding:18px 24px;
-  flex-wrap:wrap; row-gap:10px;
 }
 .chat-header-info{display:flex; align-items:center; gap:12px;}
 .chat-box{
@@ -606,13 +558,6 @@ footer a:hover{color:#fff;}
   display:flex;align-items:center;justify-content:center; cursor:pointer;
 }
 .icon-btn:hover{border-color:var(--teal);}
-@media (max-width:600px){
-  .chat-shell{padding:20px 14px 40px;}
-  .chat-header{padding:14px 16px; border-radius:14px 14px 0 0;}
-  .chat-box{padding:16px; min-height:320px;}
-  .msg{max-width:85%;}
-  .chat-input-row{padding:10px; border-radius:0 0 14px 14px;}
-}
 
 .call-overlay{
   position:fixed; inset:0; background:#12181f; z-index:200;
@@ -638,12 +583,6 @@ footer a:hover{color:#fff;}
 .call-btn.end{background:var(--rust);}
 .call-btn:hover{background:rgba(255,255,255,.22);}
 .call-btn.end:hover{background:#8f3a24;}
-@media (max-width:480px){
-  .call-stage{width:94vw;}
-  .call-self{width:84px; bottom:12px; right:12px;}
-  .call-controls{gap:10px; margin-top:18px;}
-  .call-btn{width:48px;height:48px;}
-}
 
 /* ===================================================
    AVAILABILITY GRID + VISIT SCHEDULING (member page)
@@ -667,42 +606,6 @@ footer a:hover{color:#fff;}
 .avail-block-btn:hover{border-color:var(--teal);}
 .avail-block-btn.on{background:var(--teal); border-color:var(--teal); color:#fff;}
 .avail-block-btn:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
-
-/* Below ~740px the 7-day x 6-block grid can't fit as a table without
-   squeezing cells or forcing horizontal scroll, so it's restructured
-   into one card per day instead of shrinking. This only changes how
-   the existing table markup is *displayed* (table -> block, tr -> a
-   day-card grid) — the JS-built <table> and its button elements are
-   untouched. Since the buttons render with no visible text at any
-   size (only an aria-label), each button's time label is injected
-   here via its data-start attribute rather than duplicated in HTML;
-   if TIME_BLOCKS in the script below ever changes, update these too. */
-@media (max-width:740px){
-  .avail-grid-wrap{overflow-x:visible;}
-  .avail-grid-v2{border-spacing:0; display:block;}
-  .avail-grid-v2 thead{display:none;}
-  .avail-grid-v2 tbody{display:block;}
-  .avail-grid-v2 tbody tr{
-    display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
-    background:#fff; border:1.5px solid var(--line); border-radius:14px;
-    padding:14px; margin-bottom:12px;
-  }
-  .avail-grid-v2 td{display:block; padding:0;}
-  .avail-grid-v2 td.avail-daylabel{
-    grid-column:1 / -1; text-align:left; padding:0 0 8px; font-size:18px;
-  }
-  .avail-block-btn{
-    min-height:56px; display:flex; align-items:center; justify-content:center;
-    text-align:center; line-height:1.25;
-  }
-  .avail-block-btn::before{content:attr(data-start); font-size:12px;}
-  .avail-block-btn[data-start="08:00:00"]::before{content:"8–10am";}
-  .avail-block-btn[data-start="10:00:00"]::before{content:"10am–12pm";}
-  .avail-block-btn[data-start="12:00:00"]::before{content:"12–2pm";}
-  .avail-block-btn[data-start="14:00:00"]::before{content:"2–4pm";}
-  .avail-block-btn[data-start="16:00:00"]::before{content:"4–6pm";}
-  .avail-block-btn[data-start="18:00:00"]::before{content:"6–8pm";}
-}
 
 .avail-summary{
   margin-top:18px; font-size:17px; color:var(--ink-soft); font-style:italic; line-height:1.5;
@@ -759,91 +662,87 @@ footer a:hover{color:#fff;}
     <p>Everything about your match, in one place.</p>
   </div>
 
-  <div class="dash-col dash-col-primary">
-    <div class="dash-card hidden" id="interviewStatusCard">
-      <span class="status-badge pending">🕒 Interview Pending Review</span>
-      <h2>Your Interview</h2>
-      <p>You're booked in with the CareQuest team. Once they confirm your interview, we'll start looking for your match.</p>
-    </div>
+  <div class="dash-card hidden" id="interviewStatusCard">
+    <span class="status-badge pending">🕒 Interview Pending Review</span>
+    <h2>Your Interview</h2>
+    <p>You're booked in with the CareQuest team. Once they confirm your interview, we'll start looking for your match.</p>
+  </div>
 
-    <div class="dash-card hidden" id="noMatchCard">
-      <h2>No Match Yet</h2>
-      <p>We're finding the right match for you. Check back soon — we'll let you know as soon as it happens.</p>
-    </div>
+  <div class="dash-card hidden" id="noMatchCard">
+    <h2>No Match Yet</h2>
+    <p>We're finding the right match for you. Check back soon — we'll let you know as soon as it happens.</p>
+  </div>
 
-    <div class="dash-card hidden" id="matchInfoCard">
-      <span class="status-badge matched">🤝 Matched</span>
-      <h2>Your Match</h2>
-      <div class="match-card">
-        <div class="match-avatar" id="mpAvatar">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
-        </div>
-        <div>
-          <strong id="mpName" style="font-size:19px;">—</strong>
-          <div class="match-tags" id="mpTags"></div>
-        </div>
+  <div class="dash-card hidden" id="matchInfoCard">
+    <span class="status-badge matched">🤝 Matched</span>
+    <h2>Your Match</h2>
+    <div class="match-card">
+      <div class="match-avatar" id="mpAvatar">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
       </div>
-    </div>
-
-    <div class="dash-card" id="profilePhotoCard">
-      <h2>Profile Photo</h2>
-      <p>Add a photo so your match can put a face to your name.</p>
-      <div style="display:flex; align-items:center; gap:20px; margin-top:16px; flex-wrap:wrap;">
-        <div class="match-avatar" id="myAvatarPreview" style="width:88px; height:88px;">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
-        </div>
-        <div>
-          <label for="avatarFileInput" class="btn btn-outline" style="cursor:pointer;">Choose Photo</label>
-          <input type="file" id="avatarFileInput" accept="image/png, image/jpeg, image/webp" style="display:none;">
-          <p id="avatarUploadStatus" style="margin-top:8px; font-size:14px; color:var(--ink-soft);"></p>
-        </div>
+      <div>
+        <strong id="mpName" style="font-size:19px;">—</strong>
+        <div class="match-tags" id="mpTags"></div>
       </div>
     </div>
   </div>
 
-  <div class="dash-col dash-col-secondary">
-    <div class="dash-card" id="availabilityCard">
-      <h2>🗓️ Your Weekly Availability</h2>
-      <p style="color:var(--ink-soft); font-size:16px;">Tap the times you're usually free every week. Once you're matched, this is what your match sees when booking a visit.</p>
-      <div class="avail-grid-wrap">
-        <table class="avail-grid-v2" id="availGridTable">
-          <thead><tr><th></th></tr></thead>
-          <tbody></tbody>
-        </table>
+  <div class="dash-card" id="profilePhotoCard">
+    <h2>Profile Photo</h2>
+    <p>Add a photo so your match can put a face to your name.</p>
+    <div style="display:flex; align-items:center; gap:20px; margin-top:16px; flex-wrap:wrap;">
+      <div class="match-avatar" id="myAvatarPreview" style="width:88px; height:88px;">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
       </div>
-      <p class="avail-summary" id="availSummary">Loading your availability…</p>
-      <button type="button" class="btn btn-primary" id="saveAvailBtn" style="margin-top:8px;">Save Availability</button>
-      <p id="availSaveStatus" style="margin-top:10px; font-size:15px; color:var(--teal-deep); font-weight:700; display:none;">Saved ✓</p>
-    </div>
-
-    <div class="dash-card hidden" id="upcomingVisitCard">
-      <span class="status-badge verified">✓ Visit Scheduled</span>
-      <h2>📅 Upcoming Visit</h2>
-      <p id="upcomingVisitText" style="font-size:18px; font-weight:600;">—</p>
-      <button type="button" class="btn btn-outline" id="cancelVisitBtn" style="margin-top:10px;">Cancel Visit</button>
-    </div>
-
-    <div class="dash-card hidden" id="scheduleCard">
-      <h2>📅 Schedule a Visit</h2>
-      <p id="scheduleIntroText" style="color:var(--ink-soft); font-size:16px;">No visit scheduled yet.</p>
-      <button type="button" class="btn btn-primary" id="scheduleVisitBtn">Schedule a Visit</button>
-      <div class="hidden" id="slotPicker" style="margin-top:22px;">
-        <p id="slotPickerStatus" style="font-size:16px; color:var(--ink-soft);">Finding times that work for both of you…</p>
-        <div id="slotList"></div>
-        <button type="button" class="btn btn-primary hidden" id="confirmVisitBtn" style="margin-top:10px;" disabled>Confirm Visit</button>
+      <div>
+        <label for="avatarFileInput" class="btn btn-outline" style="cursor:pointer;">Choose Photo</label>
+        <input type="file" id="avatarFileInput" accept="image/png, image/jpeg, image/webp" style="display:none;">
+        <p id="avatarUploadStatus" style="margin-top:8px; font-size:14px; color:var(--ink-soft);"></p>
       </div>
     </div>
+  </div>
 
-    <div class="dash-card hidden" id="inlineChatCard">
-      <h2>💬 Messages</h2>
-      <p style="color:var(--ink-soft); font-size:16px;">Recent messages with your match.</p>
-      <div class="inline-chat-box" id="inlineChatBox"></div>
-      <div class="inline-chat-input-row">
-        <input type="text" id="inlineChatInput" placeholder="Type a message…">
-        <button type="button" class="btn btn-primary" id="inlineChatSendBtn">Send</button>
-      </div>
-      <p style="margin-top:14px;"><a href="messages" style="color:var(--teal); font-weight:700; text-decoration:none; font-size:15px;">See full message history →</a></p>
+  <div class="dash-card" id="availabilityCard">
+    <h2>🗓️ Your Weekly Availability</h2>
+    <p style="color:var(--ink-soft); font-size:16px;">Tap the times you're usually free every week. Once you're matched, this is what your match sees when booking a visit.</p>
+    <div class="avail-grid-wrap">
+      <table class="avail-grid-v2" id="availGridTable">
+        <thead><tr><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
     </div>
+    <p class="avail-summary" id="availSummary">Loading your availability…</p>
+    <button type="button" class="btn btn-primary" id="saveAvailBtn" style="margin-top:8px;">Save Availability</button>
+    <p id="availSaveStatus" style="margin-top:10px; font-size:15px; color:var(--teal-deep); font-weight:700; display:none;">Saved ✓</p>
+  </div>
+
+  <div class="dash-card hidden" id="upcomingVisitCard">
+    <span class="status-badge verified">✓ Visit Scheduled</span>
+    <h2>📅 Upcoming Visit</h2>
+    <p id="upcomingVisitText" style="font-size:18px; font-weight:600;">—</p>
+    <button type="button" class="btn btn-outline" id="cancelVisitBtn" style="margin-top:10px;">Cancel Visit</button>
+  </div>
+
+  <div class="dash-card hidden" id="scheduleCard">
+    <h2>📅 Schedule a Visit</h2>
+    <p id="scheduleIntroText" style="color:var(--ink-soft); font-size:16px;">No visit scheduled yet.</p>
+    <button type="button" class="btn btn-primary" id="scheduleVisitBtn">Schedule a Visit</button>
+    <div class="hidden" id="slotPicker" style="margin-top:22px;">
+      <p id="slotPickerStatus" style="font-size:16px; color:var(--ink-soft);">Finding times that work for both of you…</p>
+      <div id="slotList"></div>
+      <button type="button" class="btn btn-primary hidden" id="confirmVisitBtn" style="margin-top:10px;" disabled>Confirm Visit</button>
+    </div>
+  </div>
+
+  <div class="dash-card hidden" id="inlineChatCard">
+    <h2>💬 Messages</h2>
+    <p style="color:var(--ink-soft); font-size:16px;">Recent messages with your match.</p>
+    <div class="inline-chat-box" id="inlineChatBox"></div>
+    <div class="inline-chat-input-row">
+      <input type="text" id="inlineChatInput" placeholder="Type a message…">
+      <button type="button" class="btn btn-primary" id="inlineChatSendBtn">Send</button>
+    </div>
+    <p style="margin-top:14px;"><a href="messages" style="color:var(--teal); font-weight:700; text-decoration:none; font-size:15px;">See full message history →</a></p>
   </div>
 </div>
 
