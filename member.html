@@ -1203,9 +1203,12 @@ footer a:hover{color:#fff;}
   // ---------------------------------------------------------
   // Profile photo — stored in the "avatars" Supabase Storage bucket,
   // one file per user at "<user id>/avatar.<ext>". The bucket is
-  // public-read (photos are meant to be seen by a match), but only the
-  // owning user can write to their own folder — enforced by storage
-  // RLS policies, not by anything in this page.
+  // PRIVATE: youth_profiles.avatar_url / senior_profiles.avatar_url
+  // hold the storage *path*, not a browsable URL. Viewing a photo
+  // always goes through createSignedUrl(), which only succeeds if the
+  // storage RLS policy allows it — the owner, or their matched partner,
+  // nobody else. Signed URLs expire, so they're generated fresh at
+  // render time rather than stored.
   // ---------------------------------------------------------
   function renderAvatarPreview(container, url){
     container.innerHTML = '';
@@ -1213,6 +1216,16 @@ footer a:hover{color:#fff;}
     img.src = url;
     img.alt = 'Profile photo';
     container.appendChild(img);
+  }
+
+  async function showAvatarFromPath(container, path){
+    if(!path) return;
+    const { data, error } = await cq.storage.from('avatars').createSignedUrl(path, 60 * 60);
+    if(error){
+      console.error('Could not create signed URL for avatar at', path, error);
+      return;
+    }
+    renderAvatarPreview(container, data.signedUrl);
   }
 
   async function handleAvatarUpload(e){
@@ -1235,19 +1248,16 @@ footer a:hover{color:#fff;}
       return;
     }
 
-    const { data: urlData } = cq.storage.from('avatars').getPublicUrl(path);
-    const avatarUrl = urlData.publicUrl + '?v=' + Date.now();
-
     const table = currentRole === 'youth' ? 'youth_profiles' : 'senior_profiles';
-    const { error: updateError } = await cq.from(table).update({ avatar_url: avatarUrl }).eq('id', currentUserId);
+    const { error: updateError } = await cq.from(table).update({ avatar_url: path }).eq('id', currentUserId);
 
     if(updateError){
-      console.error('Could not save avatar url:', updateError);
+      console.error('Could not save avatar path:', updateError);
       statusEl.textContent = 'Photo uploaded, but could not save it to your profile. Please try again.';
       return;
     }
 
-    renderAvatarPreview(document.getElementById('myAvatarPreview'), avatarUrl);
+    await showAvatarFromPath(document.getElementById('myAvatarPreview'), path);
     statusEl.textContent = 'Photo updated.';
   }
 
@@ -1363,7 +1373,7 @@ footer a:hover{color:#fff;}
       currentRole = role;
 
       if(myAvatarUrl){
-        renderAvatarPreview(document.getElementById('myAvatarPreview'), myAvatarUrl);
+        await showAvatarFromPath(document.getElementById('myAvatarPreview'), myAvatarUrl);
       }
 
       document.getElementById('memberGreeting').textContent = 'Welcome back, ' + displayFirstName;
@@ -1409,7 +1419,7 @@ footer a:hover{color:#fff;}
           tagsEl.appendChild(span);
         });
         if(partner[0].avatar_url){
-          renderAvatarPreview(document.getElementById('mpAvatar'), partner[0].avatar_url);
+          await showAvatarFromPath(document.getElementById('mpAvatar'), partner[0].avatar_url);
         }
       }
 

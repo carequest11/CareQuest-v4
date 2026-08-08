@@ -420,18 +420,31 @@ $$;
 
 grant execute on function public.get_match_partner(uuid) to authenticated;
 
--- Public-read bucket for profile photos. Photos are meant to be seen
--- by a match (and are shown in the app only via get_match_partner, so
--- an unmatched stranger never sees a filename/URL to begin with), but
--- the bucket itself is world-readable like most avatar hosting setups.
+-- Private bucket for profile photos. Nobody gets a bare public URL —
+-- viewing a photo requires a signed URL minted through the Storage
+-- API, which itself only succeeds if this SELECT policy allows it.
+-- "on conflict do update" forces public back to false even if an
+-- earlier run of this file already created the bucket as public.
 insert into storage.buckets (id, name, public)
-values ('avatars', 'avatars', true)
-on conflict (id) do nothing;
+values ('avatars', 'avatars', false)
+on conflict (id) do update set public = false;
 
+-- A user may view (and therefore get a signed URL for) their own
+-- photo, or their matched partner's — nobody else's. Path convention
+-- is avatars/<owning user id>/avatar.<ext>, so the folder name is the
+-- owner's id; is_matched_with() is the same helper the availability
+-- table's RLS already uses for this exact "own or matched" check.
 drop policy if exists "avatar images are publicly readable" on storage.objects;
-create policy "avatar images are publicly readable"
+drop policy if exists "owner or match can view avatar" on storage.objects;
+create policy "owner or match can view avatar"
   on storage.objects for select
-  using (bucket_id = 'avatars');
+  using (
+    bucket_id = 'avatars'
+    and (
+      (storage.foldername(name))[1] = auth.uid()::text
+      or public.is_matched_with(((storage.foldername(name))[1])::uuid)
+    )
+  );
 
 -- A user may only write inside their own folder: avatars/<user id>/...
 drop policy if exists "users can upload their own avatar" on storage.objects;
