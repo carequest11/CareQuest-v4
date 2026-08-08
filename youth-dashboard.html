@@ -701,12 +701,14 @@ footer a:hover{color:#fff;}
       document.getElementById('matchLockedCard').classList.remove('hidden');
     }
 
-    const { data: match } = await cq
+    const { data: match, error: matchErr } = await cq
       .from('matches')
       .select('id')
       .eq('youth_id', session.user.id)
       .eq('status', 'active')
       .maybeSingle();
+
+    if(matchErr) console.error('matches lookup failed for youth_id =', session.user.id, matchErr);
 
     if(match){
       document.getElementById('matchLockedCard').classList.add('hidden');

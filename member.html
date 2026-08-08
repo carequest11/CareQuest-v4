@@ -1270,7 +1270,20 @@ footer a:hover{color:#fff;}
     }
     currentUserId = session.user.id;
 
-    const { data: youthProfile } = await cq.from('youth_profiles').select('first_name, interview_status, avatar_url').eq('id', session.user.id).maybeSingle();
+    // Look up both profile tables explicitly rather than assuming
+    // youth-first-else-senior: falling back to "senior" whenever the
+    // youth lookup comes back empty (for any reason — RLS hiccup,
+    // network blip, etc.) would silently misclassify a real youth,
+    // point the matches query at the wrong column, and show
+    // "No Match Yet" even when a match genuinely exists.
+    const [{ data: youthProfile, error: youthProfileErr }, { data: seniorProfile, error: seniorProfileErr }] = await Promise.all([
+      cq.from('youth_profiles').select('first_name, interview_status, avatar_url').eq('id', session.user.id).maybeSingle(),
+      cq.from('senior_profiles').select('full_name, avatar_url').eq('id', session.user.id).maybeSingle()
+    ]);
+
+    if(youthProfileErr) console.error('youth_profiles lookup failed:', youthProfileErr);
+    if(seniorProfileErr) console.error('senior_profiles lookup failed:', seniorProfileErr);
+
     let role, displayFirstName, myAvatarUrl;
 
     if(youthProfile){
@@ -1280,11 +1293,14 @@ footer a:hover{color:#fff;}
       if(youthProfile.interview_status !== 'verified'){
         document.getElementById('interviewStatusCard').classList.remove('hidden');
       }
-    } else {
-      const { data: seniorProfile } = await cq.from('senior_profiles').select('full_name, avatar_url').eq('id', session.user.id).maybeSingle();
+    } else if(seniorProfile){
       role = 'senior';
-      displayFirstName = seniorProfile ? seniorProfile.full_name.split(' ')[0] : 'there';
-      myAvatarUrl = seniorProfile ? seniorProfile.avatar_url : null;
+      displayFirstName = seniorProfile.full_name.split(' ')[0];
+      myAvatarUrl = seniorProfile.avatar_url;
+    } else {
+      console.error('No youth_profiles or senior_profiles row found for this signed-in user:', session.user.id);
+      window.location.href = 'login';
+      return;
     }
     currentRole = role;
 
@@ -1303,12 +1319,14 @@ footer a:hover{color:#fff;}
     updateAvailabilitySummary();
 
     const filterCol = role === 'youth' ? 'youth_id' : 'senior_id';
-    const { data: match } = await cq
+    const { data: match, error: matchErr } = await cq
       .from('matches')
       .select('id, youth_id, senior_id')
       .eq(filterCol, session.user.id)
       .eq('status', 'active')
       .maybeSingle();
+
+    if(matchErr) console.error('matches lookup failed for', filterCol, '=', session.user.id, matchErr);
 
     if(!match){
       document.getElementById('noMatchCard').classList.remove('hidden');

@@ -666,12 +666,14 @@ footer a:hover{color:#fff;}
 
     document.querySelector('.dash-greeting h1').textContent = 'Welcome, ' + profile.full_name.split(' ')[0];
 
-    const { data: match } = await cq
+    const { data: match, error: matchErr } = await cq
       .from('matches')
       .select('id')
       .eq('senior_id', session.user.id)
       .eq('status', 'active')
       .maybeSingle();
+
+    if(matchErr) console.error('matches lookup failed for senior_id =', session.user.id, matchErr);
 
     if(!match) return;
 
