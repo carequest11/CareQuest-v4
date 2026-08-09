@@ -24,7 +24,7 @@
   --gold:#C99A44;
   --line:#DCCBA6;
   --radius:14px;
-  --max:1120px;
+  --max:1400px;
 }
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
@@ -763,23 +763,50 @@ footer a:hover{color:#fff;}
 .tab-panel{max-width:var(--max); margin:0 auto; padding:24px 28px 56px;}
 .tab-panel:focus{outline:none;}
 
-#homePhotoRow{margin-top:24px;}
+/* Profile Photo has far less content than Your Details beside it —
+   override the row's default align-items:stretch (and the height:100%
+   every .dash-grid-2 child gets) so each card here sizes to its own
+   content instead of both stretching to match the taller one. */
+#homePhotoRow{margin-top:24px; align-items:start;}
+#homePhotoRow > *{height:auto;}
 
 /* ---- Your Match tab: who you're matched with and your availability
    run full width (availability in particular needs the room — six
    time-block columns don't fit readably in a half-width column without
    forcing horizontal scroll), then a compact two-column row below pairs
-   Schedule a Visit with Messages + Calling. On short viewports the
-   panel itself gets a scrollbar as a fallback — individual cards keep
-   their natural, readable size (touch targets stay full-size) rather
-   than being squeezed to force a fit. ---- */
-#panelMatch > * + *{margin-top:24px;}
+   Schedule a Visit with Messages + Calling. Every size below is scoped
+   to #panelMatch (via ID) so it only tightens the youth "Your Match"
+   tab — the senior view further down uses these same #availabilityCard/
+   #inlineChatCard/etc elements (moved here by JS for youth only) at
+   their original, roomier size. Goal: Your Match, Your Weekly
+   Availability, Schedule a Visit, Messages, and Calling all visible at
+   once on a normal laptop screen with no scrolling. On a genuinely
+   short viewport the panel still gets its own scrollbar as a fallback
+   rather than squeezing touch targets further to force a fit. ---- */
+#panelMatch{padding-top:14px; padding-bottom:20px;}
+#panelMatch > * + *{margin-top:14px;}
+#panelMatch .dg-card{padding:16px 20px;}
+#panelMatch .dg-card-head{margin-bottom:10px;}
+#panelMatch .dg-card-sub{margin-bottom:10px;}
 .match-panel-grid{
-  display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;
+  display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;
 }
-.match-panel-col{display:flex; flex-direction:column; gap:16px; min-width:0;}
-.match-panel-col .dg-card{padding:20px 22px;}
-.match-panel-col .dg-card-head{margin-bottom:12px;}
+.match-panel-col{display:flex; flex-direction:column; min-width:0;}
+.match-panel-col > * + *{margin-top:14px;}
+/* Messages and Calling are always shown together (see loadMember() —
+   #inlineChatCard and #callCard are revealed in the same branch, right
+   after a match is found) and are both effectively single-action cards
+   once you're matched, so fusing them into one visually continuous
+   block — shared edge, divider instead of a second card border/shadow
+   — reads as "one card" and saves the height of a duplicate header. */
+#panelMatch #inlineChatCard{border-radius:16px 16px 0 0; box-shadow:none;}
+#panelMatch #callCard{margin-top:0; border-top:1px dashed var(--line); border-radius:0 0 16px 16px;}
+#panelMatch .inline-chat-box{min-height:150px; max-height:220px;}
+#panelMatch .avail-grid-wrap{margin-top:10px;}
+#panelMatch .avail-grid-v2{border-spacing:4px;}
+#panelMatch .avail-grid-v2 th{padding:3px 5px; font-size:13px;}
+#panelMatch .avail-grid-v2 th.avail-daylabel{font-size:15px; padding-right:10px;}
+#panelMatch .avail-block-btn{min-height:42px; font-size:14px; border-radius:8px;}
 @media (min-width:1024px){
   #panelMatch{max-height:calc(100vh - 260px); overflow-y:auto;}
 }

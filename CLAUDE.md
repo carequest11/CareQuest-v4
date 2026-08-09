@@ -8,6 +8,10 @@ CareQuest matches youth volunteers with seniors, then lets them message, schedul
 
 **We are not using Cal.com.** A prior version of the scheduling feature used Cal.com embeds/webhooks; it was fully removed (including `api/cal-webhook.js`) in favor of the native availability/visits system described below. Don't reintroduce it.
 
+## Pull before you start
+
+Two people work in this repo. **Always run `git pull` at the start of a session, before making any edits** — the other person may have pushed directly to `main` since your local copy was last synced, and editing a stale file risks silently reverting or conflicting with their work.
+
 ## Design principle
 
 Design for older users throughout: large text, high contrast, generous tap targets. This applies to any UI/CSS work on this site, not just `member.html`.
