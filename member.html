@@ -638,6 +638,81 @@ footer a:hover{color:#fff;}
 }
 .inline-chat-input-row input:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
 
+/* ===================================================
+   DASHBOARD OVERVIEW WIDGETS
+   (Upcoming Opportunities / My Impact / Quick Links)
+=================================================== */
+.dash-grid-wrap{max-width:var(--max); margin:0 auto; padding:36px 28px 8px;}
+.dash-section-head{margin-bottom:20px;}
+.dash-section-head h2{font-size:clamp(22px,2.6vw,28px);}
+.dash-section-head p{color:var(--ink-soft); margin-top:6px; font-size:16px;}
+.dash-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+  gap:24px;
+}
+.dg-card{
+  background:#fff; border:1px solid var(--line); border-radius:16px;
+  padding:26px 26px 24px; box-shadow:0 4px 14px rgba(35,43,54,.05);
+  display:flex; flex-direction:column;
+}
+.dg-card-head{display:flex; align-items:center; gap:12px; margin-bottom:18px;}
+.dg-badge{
+  width:42px; height:42px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.dg-badge svg{width:20px; height:20px;}
+.dg-badge-amber{background:#FBE9C8; color:#9A6A1F;}
+.dg-badge-rose{background:#FBE0E6; color:#B3435F;}
+.dg-badge-purple{background:#E9E0F8; color:#6D46B0;}
+.dg-badge-mint{background:#DCF3E6; color:var(--teal-deep);}
+.dg-card-title{font-size:18px; flex:1; margin:0;}
+.dg-view-all{font-size:14px; font-weight:700; color:var(--teal); text-decoration:none; white-space:nowrap;}
+.dg-view-all:hover{text-decoration:underline;}
+.dg-card-body{flex:1; display:flex; flex-direction:column; gap:16px;}
+
+.dg-opp-item{padding-bottom:16px; border-bottom:1px solid var(--line);}
+.dg-opp-item:last-child{border-bottom:none; padding-bottom:0;}
+.dg-opp-title{display:block; font-size:16px; margin-bottom:4px;}
+.dg-opp-desc{font-size:14px; color:var(--ink-soft); margin:0 0 8px; line-height:1.5;}
+.dg-opp-meta{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-soft); margin-top:4px;}
+.dg-opp-meta svg{width:14px; height:14px; flex-shrink:0;}
+
+.dg-empty-state{text-align:center; padding:16px 4px 4px; color:var(--ink-soft);}
+.dg-empty-state p{margin:0 0 16px; font-size:15px; line-height:1.5;}
+
+.dg-stat-row{display:flex; align-items:center; gap:16px;}
+.dg-stat-icon{
+  width:56px; height:56px; border-radius:50%; background:#DCF3E6; color:var(--teal-deep);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.dg-stat-icon svg{width:26px; height:26px;}
+.dg-stat-value{font-family:'Fraunces',serif; font-size:34px; font-weight:600; line-height:1;}
+.dg-stat-label{font-size:14px; color:var(--ink-soft); margin-top:4px; font-weight:600;}
+.dg-impact-note{
+  font-size:14px; color:var(--teal-deep); font-weight:700; margin:0;
+  padding-top:16px; border-top:1px solid var(--line);
+}
+
+.dg-links-list{gap:6px;}
+.dg-link-row{
+  display:flex; align-items:center; gap:14px; padding:12px 10px; margin:0 -10px;
+  border-radius:12px; text-decoration:none; color:var(--ink); transition:background .15s ease;
+}
+.dg-link-row:hover{background:var(--paper-deep);}
+.dg-link-icon{
+  width:38px; height:38px; border-radius:10px; background:var(--paper-deep); color:var(--teal-deep);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.dg-link-icon svg{width:18px; height:18px;}
+.dg-link-text{flex:1; min-width:0;}
+.dg-link-text strong{display:block; font-size:15px;}
+.dg-link-text span{display:block; font-size:13px; color:var(--ink-soft); margin-top:2px;}
+.dg-chev{width:18px; height:18px; flex-shrink:0; color:var(--ink-soft);}
+.dg-explore-btn{width:100%; margin-top:18px; justify-content:center;}
+
+@media (max-width:640px){ .dg-card{padding:22px 20px;} }
+
 </style>
 </head>
 <body>
@@ -654,6 +729,18 @@ footer a:hover{color:#fff;}
   </div>
 </header>
 <script src="js/authHeader.js"></script>
+
+<div class="dash-grid-wrap hidden" id="youthDashSection">
+  <div class="dash-section-head">
+    <h2>Youth</h2>
+    <p>Your opportunities, impact, and quick links.</p>
+  </div>
+  <div class="dash-grid">
+    <div id="opportunitiesCardMount"></div>
+    <div id="impactCardMount"></div>
+    <div id="quickLinksCardMount"></div>
+  </div>
+</div>
 
 <div class="dash-shell">
   <div class="dash-greeting">
@@ -777,6 +864,176 @@ footer a:hover{color:#fff;}
   let partnerNameGlobal = 'your match';
   let myAvailability = [];
   let selectedSlot = null;
+
+  // ---------------------------------------------------------
+  // Dashboard overview widgets: Upcoming Opportunities, My Impact,
+  // Quick Links.
+  //
+  // Render functions each take a data value as their only argument —
+  // that value is the "props" contract. Right now they're called with
+  // the MOCK_* constants below; wiring these to real data later means
+  // building a value of the same shape (e.g. from a Supabase query)
+  // and calling the same render function again, with no markup changes.
+  // ---------------------------------------------------------
+  const DASH_ICONS = {
+    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 9.5h17"/></svg>',
+    heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.7-4.3-9.3-8.2C.6 9.6 1.7 6 5 5.2c2-.5 3.9.4 5 2 .9-1.5 2.9-2.5 5-2 3.3.8 4.4 4.4 2.3 7.6C18.7 16.7 12 21 12 21z"/></svg>',
+    link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15l6-6"/><path d="M8 17.5 6 19.5a3.2 3.2 0 0 1-4.5-4.5L3.5 13"/><path d="M16 6.5 18 4.5a3.2 3.2 0 1 1 4.5 4.5L20.5 11"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.6 7-12a7 7 0 1 0-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>',
+    person: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke-linecap="round"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7.5"/><path d="M21 21l-4.3-4.3"/></svg>',
+    book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5H6.5A2.5 2.5 0 0 0 4 21V5.5z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20"/></svg>',
+    help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.3 9.3a2.7 2.7 0 1 1 3.9 2.4c-.9.5-1.2 1-1.2 2"/><circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none"/></svg>',
+    chevron: '<svg class="dg-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'
+  };
+
+  function escapeHtml(str){
+    return String(str == null ? '' : str).replace(/[&<>"']/g, ch => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+    ));
+  }
+
+  function formatOpportunityWhen(startsAt, endsAt){
+    const { DateTime } = luxon;
+    const start = DateTime.fromISO(startsAt);
+    const end = DateTime.fromISO(endsAt);
+    if(!start.isValid || !end.isValid) return '';
+    return start.toFormat('LLLL d, yyyy') + ' • ' + start.toFormat('h:mm a') + ' – ' + end.toFormat('h:mm a');
+  }
+
+  // Shared shell every dashboard-overview card is built from: badge icon,
+  // title, an optional "View all" link, a body, and an optional footer
+  // (e.g. Quick Links' "Explore All Resources" button). Keeping the
+  // header/footer markup in one place is what makes the three card
+  // components below consistent without copy-pasting it three times.
+  function dgCardShell({ badgeClass, icon, title, viewAllHref, body, bodyClass, footer }){
+    return (
+      '<div class="dg-card">' +
+        '<div class="dg-card-head">' +
+          '<div class="dg-badge ' + badgeClass + '">' + icon + '</div>' +
+          '<h2 class="dg-card-title">' + escapeHtml(title) + '</h2>' +
+          (viewAllHref ? '<a href="' + escapeHtml(viewAllHref) + '" class="dg-view-all">View all</a>' : '') +
+        '</div>' +
+        '<div class="dg-card-body' + (bodyClass ? ' ' + bodyClass : '') + '">' + body + '</div>' +
+        (footer || '') +
+      '</div>'
+    );
+  }
+
+  // ---------------------------------------------------------
+  // Reusable card components. Each is a pure function: data in
+  // (its "props"), an HTML string out — no DOM lookups, no side
+  // effects, so the same function can be mounted into any container,
+  // more than once, and re-rendered by calling it again with new data.
+  // ---------------------------------------------------------
+  function OpportunitiesCard({ opportunities, viewAllHref } = {}){
+    const items = (opportunities || []).slice(0, 3);
+    const body = items.length === 0
+      ? '<div class="dg-empty-state">' +
+          '<p>No upcoming opportunities yet — check back soon or see what\'s open now.</p>' +
+          '<a href="#" class="btn btn-primary">Browse Opportunities</a>' +
+        '</div>'
+      : items.map(opp =>
+          '<div class="dg-opp-item">' +
+            '<strong class="dg-opp-title">' + escapeHtml(opp.title) + '</strong>' +
+            '<p class="dg-opp-desc">' + escapeHtml(opp.description) + '</p>' +
+            '<div class="dg-opp-meta">' + DASH_ICONS.calendar + '<span>' + escapeHtml(formatOpportunityWhen(opp.startsAt, opp.endsAt)) + '</span></div>' +
+            '<div class="dg-opp-meta">' + DASH_ICONS.pin + '<span>' + escapeHtml(opp.location) + '</span></div>' +
+          '</div>'
+        ).join('');
+    return dgCardShell({
+      badgeClass: 'dg-badge-amber', icon: DASH_ICONS.calendar, title: 'Upcoming Opportunities',
+      viewAllHref: viewAllHref || '#', body
+    });
+  }
+
+  function ImpactCard({ stats, note, viewAllHref } = {}){
+    const body =
+      (stats || []).map(stat =>
+        '<div class="dg-stat-row">' +
+          '<div class="dg-stat-icon">' + (DASH_ICONS[stat.icon] || DASH_ICONS.person) + '</div>' +
+          '<div>' +
+            '<div class="dg-stat-value">' + escapeHtml(stat.value) + '</div>' +
+            '<div class="dg-stat-label">' + escapeHtml(stat.label) + '</div>' +
+          '</div>' +
+        '</div>'
+      ).join('') +
+      (note ? '<p class="dg-impact-note">' + escapeHtml(note) + '</p>' : '');
+    return dgCardShell({
+      badgeClass: 'dg-badge-rose', icon: DASH_ICONS.heart, title: 'My Impact',
+      viewAllHref: viewAllHref || '#', body
+    });
+  }
+
+  function QuickLinksCard({ links, exploreHref } = {}){
+    const body = (links || []).map(link =>
+      '<a href="' + escapeHtml(link.href) + '" class="dg-link-row">' +
+        '<div class="dg-link-icon">' + (DASH_ICONS[link.icon] || DASH_ICONS.link) + '</div>' +
+        '<div class="dg-link-text">' +
+          '<strong>' + escapeHtml(link.title) + '</strong>' +
+          '<span>' + escapeHtml(link.description) + '</span>' +
+        '</div>' +
+        DASH_ICONS.chevron +
+      '</a>'
+    ).join('');
+    const footer = '<a href="' + escapeHtml(exploreHref || '#') + '" class="btn btn-outline dg-explore-btn">Explore All Resources</a>';
+    return dgCardShell({
+      badgeClass: 'dg-badge-purple', icon: DASH_ICONS.link, title: 'Quick Links',
+      viewAllHref: null, body, bodyClass: 'dg-links-list', footer
+    });
+  }
+
+  function mountComponent(containerId, componentFn, props){
+    const el = document.getElementById(containerId);
+    if(el) el.innerHTML = componentFn(props);
+  }
+
+  // Placeholder data — shaped the way real data will eventually arrive.
+  // Opportunities: e.g. an `opportunities` table filtered to ones the
+  // signed-in youth hasn't booked yet, ordered by start time, limit 3.
+  const MOCK_OPPORTUNITIES = [
+    {
+      id: 'opp-1',
+      title: 'Community Garden Visit',
+      description: 'Help tend the raised beds and swap stories with residents who love gardening as much as you do.',
+      startsAt: '2025-05-24T16:00:00',
+      endsAt: '2025-05-24T18:00:00',
+      location: 'Sunset Manor Senior Living'
+    },
+    {
+      id: 'opp-2',
+      title: 'Board Game Afternoon',
+      description: 'Bring a favorite game and spend an easygoing hour playing with residents in the common room.',
+      startsAt: '2025-05-29T13:00:00',
+      endsAt: '2025-05-29T15:00:00',
+      location: 'Harborview Care Home'
+    }
+  ];
+
+  // Impact: `stats` is an array so a second tile (e.g. Opportunities
+  // Completed) can be added later without changing ImpactCard.
+  const MOCK_IMPACT = {
+    stats: [
+      { icon: 'person', value: '18', label: 'Hours Volunteered' }
+    ],
+    note: 'Keep up the great work!'
+  };
+
+  const MOCK_QUICK_LINKS = [
+    { icon: 'search', title: 'Browse Opportunities', description: 'Find volunteer opportunities', href: '#' },
+    { icon: 'book', title: 'Resource Hub', description: 'Access tools and guides', href: '#' },
+    { icon: 'help', title: 'Help Center', description: 'Get support and FAQs', href: '#' }
+  ];
+
+  // Youth-only: mounts the three components with today's data and
+  // reveals the section. Called from loadMember() once the signed-in
+  // user's role is known to be 'youth' — never for seniors.
+  function renderYouthDashboardSection(){
+    mountComponent('opportunitiesCardMount', OpportunitiesCard, { opportunities: MOCK_OPPORTUNITIES, viewAllHref: '#' });
+    mountComponent('impactCardMount', ImpactCard, { stats: MOCK_IMPACT.stats, note: MOCK_IMPACT.note, viewAllHref: '#' });
+    mountComponent('quickLinksCardMount', QuickLinksCard, { links: MOCK_QUICK_LINKS, exploreHref: '#' });
+    document.getElementById('youthDashSection').classList.remove('hidden');
+  }
 
   function blockKey(day, start, end){ return day + '|' + start + '|' + end; }
 
@@ -1357,6 +1614,7 @@ footer a:hover{color:#fff;}
         if(youthProfile.interview_status !== 'verified'){
           document.getElementById('interviewStatusCard').classList.remove('hidden');
         }
+        renderYouthDashboardSection();
       } else if(seniorProfile){
         role = 'senior';
         displayFirstName = seniorProfile.full_name.split(' ')[0];
