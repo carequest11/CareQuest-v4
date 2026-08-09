@@ -459,9 +459,10 @@ footer a:hover{color:#fff;}
    DASHBOARD (shared — youth + senior)
 =================================================== */
 .dash-shell{max-width:var(--max); margin:0 auto; padding:8px 28px 72px;}
-.dash-greeting{margin-bottom:8px;}
-.dash-greeting h1{font-size:clamp(24px,3vw,32px);}
-.dash-greeting p{color:var(--ink-soft); margin-top:8px; max-width:64ch;}
+.dash-greeting{margin-bottom:2px;}
+.dash-greeting .eyebrow{margin-bottom:4px;}
+.dash-greeting h1{font-size:clamp(20px,2.4vw,26px);}
+.dash-greeting p{color:var(--ink-soft); margin-top:4px; max-width:64ch; font-size:15px;}
 .lock-icon{
   width:34px;height:34px;border-radius:50%;background:#fff;border:1.5px solid var(--line);
   display:flex;align-items:center;justify-content:center; flex-shrink:0;
@@ -770,29 +771,33 @@ footer a:hover{color:#fff;}
 #homePhotoRow{margin-top:24px; align-items:start;}
 #homePhotoRow > *{height:auto;}
 
-/* ---- Your Match tab: who you're matched with and your availability
-   run full width (availability in particular needs the room — six
-   time-block columns don't fit readably in a half-width column without
-   forcing horizontal scroll), then a compact two-column row below pairs
-   Schedule a Visit with Messages + Calling. Every size below is scoped
-   to #panelMatch (via ID) so it only tightens the youth "Your Match"
-   tab — the senior view further down uses these same #availabilityCard/
+/* ---- Your Match tab: who you're matched with, then your availability
+   (capped to half width on desktop — the container is wide enough now
+   that six time-block columns still read fine at half width, no need
+   for the full row), then a compact two-column row pairing Schedule a
+   Visit with Messages + Calling. Every size below is scoped to
+   #panelMatch (via ID) so it only tightens the youth "Your Match" tab
+   — the senior view further down uses these same #availabilityCard/
    #inlineChatCard/etc elements (moved here by JS for youth only) at
    their original, roomier size. Goal: Your Match, Your Weekly
    Availability, Schedule a Visit, Messages, and Calling all visible at
-   once on a normal laptop screen with no scrolling. On a genuinely
-   short viewport the panel still gets its own scrollbar as a fallback
-   rather than squeezing touch targets further to force a fit. ---- */
-#panelMatch{padding-top:14px; padding-bottom:20px;}
-#panelMatch > * + *{margin-top:14px;}
-#panelMatch .dg-card{padding:16px 20px;}
-#panelMatch .dg-card-head{margin-bottom:10px;}
-#panelMatch .dg-card-sub{margin-bottom:10px;}
+   once on a normal laptop screen with no scrolling at all. On a
+   genuinely short viewport the panel still gets its own scrollbar as a
+   last-resort fallback rather than squeezing touch targets further to
+   force a fit. ---- */
+#panelMatch{padding-top:10px; padding-bottom:16px;}
+#panelMatch > * + *{margin-top:10px;}
+#panelMatch .dg-card{padding:14px 18px;}
+#panelMatch .dg-card-head{margin-bottom:8px;}
+#panelMatch .dg-card-sub{margin-bottom:8px;}
+@media (min-width:901px){
+  #panelMatch #availabilityCard{max-width:50%;}
+}
 .match-panel-grid{
-  display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;
+  display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;
 }
 .match-panel-col{display:flex; flex-direction:column; min-width:0;}
-.match-panel-col > * + *{margin-top:14px;}
+.match-panel-col > * + *{margin-top:10px;}
 /* Messages and Calling are always shown together (see loadMember() —
    #inlineChatCard and #callCard are revealed in the same branch, right
    after a match is found) and are both effectively single-action cards
@@ -801,14 +806,15 @@ footer a:hover{color:#fff;}
    — reads as "one card" and saves the height of a duplicate header. */
 #panelMatch #inlineChatCard{border-radius:16px 16px 0 0; box-shadow:none;}
 #panelMatch #callCard{margin-top:0; border-top:1px dashed var(--line); border-radius:0 0 16px 16px;}
-#panelMatch .inline-chat-box{min-height:150px; max-height:220px;}
-#panelMatch .avail-grid-wrap{margin-top:10px;}
-#panelMatch .avail-grid-v2{border-spacing:4px;}
-#panelMatch .avail-grid-v2 th{padding:3px 5px; font-size:13px;}
-#panelMatch .avail-grid-v2 th.avail-daylabel{font-size:15px; padding-right:10px;}
-#panelMatch .avail-block-btn{min-height:42px; font-size:14px; border-radius:8px;}
+#panelMatch .inline-chat-box{min-height:130px; max-height:180px;}
+#panelMatch .avail-grid-wrap{margin-top:8px;}
+#panelMatch .avail-grid-v2{border-spacing:3px;}
+#panelMatch .avail-grid-v2 th{padding:2px 4px; font-size:12.5px;}
+#panelMatch .avail-grid-v2 th.avail-daylabel{font-size:14px; padding-right:8px;}
+#panelMatch .avail-block-btn{min-height:36px; font-size:13px; border-radius:7px;}
+#panelMatch .avail-summary{margin-top:8px; font-size:14px;}
 @media (min-width:1024px){
-  #panelMatch{max-height:calc(100vh - 260px); overflow-y:auto;}
+  #panelMatch{max-height:calc(100vh - 220px); overflow-y:auto;}
 }
 @media (max-width:900px){
   .match-panel-grid{grid-template-columns:1fr;}
@@ -831,7 +837,7 @@ footer a:hover{color:#fff;}
 </header>
 <script src="js/authHeader.js"></script>
 
-<div class="dash-greeting" style="max-width:var(--max); margin:0 auto; padding:40px 28px 0;">
+<div class="dash-greeting" style="max-width:var(--max); margin:0 auto; padding:18px 28px 0;">
   <span class="eyebrow">Your CareQuest</span>
   <h1 id="memberGreeting">Welcome back</h1>
   <p>Everything about your match, in one place.</p>
