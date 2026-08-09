@@ -811,7 +811,10 @@ footer a:hover{color:#fff;}
 #panelMatch .dg-card-head{margin-bottom:8px;}
 #panelMatch .dg-card-sub{margin-bottom:8px;}
 .match-panel-col{display:flex; flex-direction:column; min-width:0;}
-.match-panel-col > * + *{margin-top:10px;}
+/* Matches #panelMatch's own grid `gap:14px` above, so the space between
+   Messages and Calling (stacked inside this column) reads the same as
+   the space between every other section. */
+.match-panel-col > * + *{margin-top:14px;}
 #panelMatch .inline-chat-box{min-height:130px; max-height:180px;}
 #panelMatch .avail-grid-wrap{margin-top:8px;}
 #panelMatch .avail-grid-v2{border-spacing:3px;}
