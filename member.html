@@ -752,13 +752,13 @@ footer a:hover{color:#fff;}
    MEMBER TABS (Youth: Home / Your Match / Opportunities & Impact)
 =================================================== */
 .member-tabs{
-  max-width:var(--max); margin:0 auto; padding:24px 28px 0;
+  max-width:var(--max); margin:0 auto; padding:14px 28px 0;
   display:flex; gap:6px; border-bottom:1px solid var(--line); flex-wrap:wrap;
 }
 .member-tab-btn{
   appearance:none; background:none; border:none; cursor:pointer;
   font-family:'Inter',sans-serif; font-weight:700; font-size:16px; color:var(--ink-soft);
-  padding:13px 16px; border-radius:10px 10px 0 0; margin-bottom:-1px; min-height:48px;
+  padding:9px 14px; border-radius:10px 10px 0 0; margin-bottom:-1px; min-height:40px;
   border-bottom:3px solid transparent;
   transition:color .15s ease, border-color .15s ease;
 }
@@ -766,20 +766,50 @@ footer a:hover{color:#fff;}
 .member-tab-btn.active{color:var(--teal-deep); border-bottom-color:var(--teal);}
 .member-tab-btn:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
 
-.tab-panel{max-width:var(--max); margin:0 auto; padding:24px 28px 56px;}
+/* Same top/bottom padding for every tab (Home, Your Match,
+   Opportunities & Impact) — this and the .tab-panel-scoped rules below
+   are what keep the gap between the tab bar and each tab's first card
+   consistent across all three, rather than each tab drifting to its
+   own spacing. */
+.tab-panel{max-width:var(--max); margin:0 auto; padding:8px 28px 10px;}
 .tab-panel:focus{outline:none;}
+
+/* ---- Compact mode for every youth tab panel (Home / Your Match /
+   Opportunities & Impact) — NOT the senior view further down, which
+   uses these same .dg-card/.dash-grid-2/.dash-grid-3/.field classes at
+   their original, roomier size (scoping via ".tab-panel X" rather than
+   editing the base rules is what keeps senior untouched). Goal: every
+   tab fits a normal laptop screen with no scrolling, Your Match
+   especially — it has the most sections (Your Match, Schedule a Visit,
+   Your Weekly Availability, Messages, Calling) stacked at once. On a
+   genuinely short viewport #panelMatch still gets its own scrollbar as
+   a last-resort fallback rather than squeezing touch targets further
+   to force a fit. ---- */
+.tab-panel .dg-card{padding:12px 16px;}
+.tab-panel .dg-card-head{margin-bottom:6px;}
+.tab-panel .dg-card-sub{margin-bottom:6px;}
+.tab-panel .dg-card-body{gap:10px;}
+.tab-panel .dash-grid-3, .tab-panel .dash-grid-2{gap:10px;}
+.tab-panel .field{margin-bottom:14px;}
+.tab-panel .dg-opp-item{padding-bottom:10px;}
+.tab-panel .dg-stat-icon{width:44px; height:44px;}
+.tab-panel .dg-stat-icon svg{width:20px; height:20px;}
+.tab-panel .dg-stat-value{font-size:26px;}
+.tab-panel .dg-link-row{padding:9px 10px;}
+.tab-panel .dg-explore-btn{margin-top:12px;}
 
 /* Profile Photo has far less content than Your Details beside it —
    override the row's default align-items:stretch (and the height:100%
    every .dash-grid-2 child gets) so each card here sizes to its own
-   content instead of both stretching to match the taller one. */
-#homePhotoRow{margin-top:24px; align-items:start;}
+   content instead of both stretching to match the taller one. No extra
+   margin-top: .tab-panel's own padding-top above is the only gap
+   before it, same as every other tab's first card. */
+#homePhotoRow{margin-top:0; align-items:start;}
 #homePhotoRow > *{height:auto;}
 
 /* ---- Your Match tab: a single uniform 2-column grid so every
-   subsection — Your Match, Schedule a Visit, Your Weekly Availability,
-   Messages, Calling — is the same width, with no leftover empty space
-   next to Availability. #panelMatch's three real DOM children
+   subsection is the same width, with no leftover empty space next to
+   Availability. #panelMatch's three real DOM children
    (#matchStatusGroup, #availabilityCard, #matchPanelGrid — always in
    that order, per activateYouthTabs()/loadMember() in the script
    below) become direct grid items via display:contents on
@@ -788,18 +818,9 @@ footer a:hover{color:#fff;}
    #matchMainCol/#matchSideCol being where they are, are untouched.
    `order` then arranges them visually as:
      Your Match          | Schedule a Visit
-     Your Weekly Avail.  | Messages + Calling
-   Every size below is scoped to #panelMatch (via ID) so it only
-   tightens the youth "Your Match" tab — the senior view further down
-   uses these same #availabilityCard/#inlineChatCard/etc elements
-   (moved here by JS for youth only) at their original, roomier size.
-   Goal: everything visible at once on a normal laptop screen with no
-   scrolling. On a genuinely short viewport the panel still gets its
-   own scrollbar as a last-resort fallback rather than squeezing touch
-   targets further to force a fit. ---- */
+     Your Weekly Avail.  | Messages + Calling ---- */
 #panelMatch{
-  padding-top:10px; padding-bottom:16px;
-  display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;
+  display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start;
 }
 #panelMatch > *{min-width:0;}
 #panelMatch #matchStatusGroup{order:1;}
@@ -807,23 +828,20 @@ footer a:hover{color:#fff;}
 #panelMatch #matchMainCol{order:2;}
 #panelMatch #availabilityCard{order:3;}
 #panelMatch #matchSideCol{order:4;}
-#panelMatch .dg-card{padding:14px 18px;}
-#panelMatch .dg-card-head{margin-bottom:8px;}
-#panelMatch .dg-card-sub{margin-bottom:8px;}
 .match-panel-col{display:flex; flex-direction:column; min-width:0;}
-/* Matches #panelMatch's own grid `gap:14px` above, so the space between
+/* Matches #panelMatch's own grid `gap:10px` above, so the space between
    Messages and Calling (stacked inside this column) reads the same as
    the space between every other section. */
-.match-panel-col > * + *{margin-top:14px;}
-#panelMatch .inline-chat-box{min-height:130px; max-height:180px;}
-#panelMatch .avail-grid-wrap{margin-top:8px;}
-#panelMatch .avail-grid-v2{border-spacing:3px;}
-#panelMatch .avail-grid-v2 th{padding:2px 4px; font-size:12.5px;}
-#panelMatch .avail-grid-v2 th.avail-daylabel{font-size:14px; padding-right:8px;}
-#panelMatch .avail-block-btn{min-height:36px; font-size:13px; border-radius:7px;}
-#panelMatch .avail-summary{margin-top:8px; font-size:14px;}
+.match-panel-col > * + *{margin-top:10px;}
+#panelMatch .inline-chat-box{min-height:110px; max-height:150px;}
+#panelMatch .avail-grid-wrap{margin-top:6px;}
+#panelMatch .avail-grid-v2{border-spacing:2px;}
+#panelMatch .avail-grid-v2 th{padding:2px 3px; font-size:12px;}
+#panelMatch .avail-grid-v2 th.avail-daylabel{font-size:13px; padding-right:6px;}
+#panelMatch .avail-block-btn{min-height:30px; font-size:12px; border-radius:6px;}
+#panelMatch .avail-summary{margin-top:6px; font-size:13px;}
 @media (min-width:1024px){
-  #panelMatch{max-height:calc(100vh - 220px); overflow-y:auto;}
+  #panelMatch{max-height:calc(100vh - 170px); overflow-y:auto;}
 }
 @media (max-width:900px){
   /* Single column: restore the natural top-to-bottom reading order
@@ -854,7 +872,7 @@ footer a:hover{color:#fff;}
 </header>
 <script src="js/authHeader.js"></script>
 
-<div class="dash-greeting" style="max-width:var(--max); margin:0 auto; padding:18px 28px 0;">
+<div class="dash-greeting" style="max-width:var(--max); margin:0 auto; padding:12px 28px 0;">
   <span class="eyebrow">Your CareQuest</span>
   <h1 id="memberGreeting">Welcome back</h1>
   <p>Everything about your match, in one place.</p>
