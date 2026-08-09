@@ -10,7 +10,6 @@
 <link rel="stylesheet" href="css/auth-header.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@^2.49.4/dist/umd/supabase.js"></script>
 <script src="js/supabaseClient.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
 <style>
 :root{
   --paper:#FBF5E9;
@@ -620,21 +619,20 @@ footer a:hover{color:#fff;}
       <div class="day-tab">Thu 24</div>
     </div>
     <div class="slot-grid" id="slotGrid">
-      <div class="slot" data-hour="9" data-minute="0">9:00 AM</div>
-      <div class="slot" data-hour="10" data-minute="0">10:00 AM</div>
-      <div class="slot disabled" data-hour="11" data-minute="0">11:00 AM</div>
-      <div class="slot" data-hour="13" data-minute="0">1:00 PM</div>
-      <div class="slot" data-hour="14" data-minute="30">2:30 PM</div>
-      <div class="slot disabled" data-hour="15" data-minute="30">3:30 PM</div>
-      <div class="slot" data-hour="16" data-minute="0">4:00 PM</div>
-      <div class="slot" data-hour="17" data-minute="0">5:00 PM</div>
+      <div class="slot">9:00 AM</div>
+      <div class="slot">10:00 AM</div>
+      <div class="slot disabled">11:00 AM</div>
+      <div class="slot">1:00 PM</div>
+      <div class="slot">2:30 PM</div>
+      <div class="slot disabled">3:30 PM</div>
+      <div class="slot">4:00 PM</div>
+      <div class="slot">5:00 PM</div>
     </div>
 
     <div class="acct-submit-row">
       <p>We'll email a confirmation once you submit.</p>
     </div>
-    <p id="interviewConfirmStatus" style="color:var(--rust); font-weight:600; display:none; margin-bottom:12px;"></p>
-    <button type="button" id="confirmInterviewBtn" class="btn btn-rust acct-submit">Confirm Interview</button>
+    <a href="member" class="btn btn-rust acct-submit">Confirm Interview</a>
   </div>
 </div>
 
@@ -651,110 +649,6 @@ footer a:hover{color:#fff;}
       slot.classList.add('selected');
     });
   });
-
-  // ---------------------------------------------------------
-  // Wiring this static day/slot picker to a real booking: the four
-  // day-tabs are relabelled to the next four calendar days (starting
-  // tomorrow) so they're never stale, and confirming posts the chosen
-  // day+time to /api/schedule-interview, which sets interview_status
-  // to 'scheduled' — a plain client-side update() can't do that (see
-  // the enforce_interview_status_change trigger in supabase-schema.sql),
-  // and this endpoint also verifies the caller instead of trusting a
-  // client-supplied id.
-  // ---------------------------------------------------------
-  const TIME_ZONE = 'America/Vancouver';
-
-  async function loadInterviewPage(){
-    const { data: { session } } = await cq.auth.getSession();
-    if(!session){
-      window.location.href = 'login';
-      return;
-    }
-
-    const { data: profile } = await cq
-      .from('youth_profiles')
-      .select('interview_status')
-      .eq('id', session.user.id)
-      .maybeSingle();
-
-    if(!profile){
-      window.location.href = 'login';
-      return;
-    }
-
-    // Already booked (or already reviewed) — nothing left to do here.
-    if(profile.interview_status !== 'pending'){
-      window.location.href = 'member';
-      return;
-    }
-
-    const { DateTime } = luxon;
-    const today = DateTime.now().setZone(TIME_ZONE);
-    document.querySelectorAll('#dayTabs .day-tab').forEach((tab, i) => {
-      const date = today.plus({ days: i + 1 }).startOf('day');
-      tab.textContent = date.toFormat('ccc d');
-      tab.dataset.date = date.toFormat('yyyy-LL-dd');
-    });
-
-    document.getElementById('confirmInterviewBtn').addEventListener('click', handleConfirmInterview);
-  }
-
-  async function handleConfirmInterview(){
-    const activeTab = document.querySelector('#dayTabs .day-tab.active');
-    const selectedSlot = document.querySelector('#slotGrid .slot.selected');
-    const statusEl = document.getElementById('interviewConfirmStatus');
-
-    if(!activeTab || !selectedSlot){
-      statusEl.textContent = 'Please pick a day and a time first.';
-      statusEl.style.display = 'block';
-      return;
-    }
-
-    const btn = document.getElementById('confirmInterviewBtn');
-    btn.disabled = true;
-    btn.textContent = 'Booking…';
-    statusEl.style.display = 'none';
-
-    const { DateTime } = luxon;
-    const date = DateTime.fromISO(activeTab.dataset.date, { zone: TIME_ZONE });
-    const scheduled = date.set({
-      hour: Number(selectedSlot.dataset.hour),
-      minute: Number(selectedSlot.dataset.minute),
-      second: 0,
-      millisecond: 0
-    });
-
-    const { data: { session } } = await cq.auth.getSession();
-
-    try {
-      const res = await fetch('/api/schedule-interview', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + session.access_token
-        },
-        body: JSON.stringify({ scheduledAt: scheduled.toUTC().toISO() })
-      });
-      const body = await res.json();
-      if(!res.ok){
-        statusEl.textContent = body.error || 'Could not book that time. Please try again.';
-        statusEl.style.display = 'block';
-        btn.disabled = false;
-        btn.textContent = 'Confirm Interview';
-        return;
-      }
-    } catch (err){
-      statusEl.textContent = 'Could not book that time. Please try again.';
-      statusEl.style.display = 'block';
-      btn.disabled = false;
-      btn.textContent = 'Confirm Interview';
-      return;
-    }
-
-    window.location.href = 'member';
-  }
-
-  loadInterviewPage();
 </script>
 
 </body>

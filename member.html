@@ -638,149 +638,6 @@ footer a:hover{color:#fff;}
 }
 .inline-chat-input-row input:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
 
-/* ===================================================
-   YOUTH MEMBER EXPERIENCE — interview gate + six-card dashboard
-   Everything below is scoped to .ystatus-card / .ydash-grid so it
-   never touches the senior layout above. One font family (Inter)
-   throughout, body text 16px+, per the redesign brief.
-=================================================== */
-.ystatus-card, .ydash-grid, .ydash-card{ font-family:'Inter',sans-serif; }
-.ystatus-card h1, .ystatus-card h2, .ydash-card h2, .ydash-card h3{
-  font-family:'Inter',sans-serif; font-weight:700;
-}
-
-/* -- interview status gate (repurposes #interviewStatusCard) -- */
-.ystatus-card{
-  max-width:560px; margin:0 auto; text-align:center; padding:48px 40px;
-}
-.ystatus-icon{
-  width:64px; height:64px; border-radius:50%; margin:0 auto 20px;
-  display:flex; align-items:center; justify-content:center; font-size:28px;
-  background:var(--paper-deep);
-}
-.ystatus-card h2{ font-size:23px; margin-bottom:12px; }
-.ystatus-card p{ font-size:16px; color:var(--ink-soft); line-height:1.6; }
-.ystatus-card .btn{ margin-top:8px; }
-.ystatus-contact{
-  margin-top:24px; padding-top:20px; border-top:1px solid var(--line);
-  font-size:15px;
-}
-.ystatus-contact a{ color:var(--teal); font-weight:700; text-decoration:none; }
-.ystatus-contact a:hover{ text-decoration:underline; }
-
-/* -- six-card responsive grid: 1 col phones, 2 col tablet, 3 col desktop -- */
-.ydash-grid{
-  display:grid; grid-template-columns:1fr; gap:20px; max-width:1100px; margin:0 auto;
-}
-@media (min-width:640px){ .ydash-grid{ grid-template-columns:1fr 1fr; } }
-@media (min-width:1000px){ .ydash-grid{ grid-template-columns:1fr 1fr 1fr; } }
-
-.ydash-card{
-  background:#fff; border:1px solid var(--line); border-radius:18px;
-  padding:26px; display:flex; flex-direction:column;
-}
-.ydash-card-head{ display:flex; align-items:flex-start; gap:14px; margin-bottom:18px; }
-.ydash-icon{
-  width:44px; height:44px; border-radius:50%; flex-shrink:0;
-  display:flex; align-items:center; justify-content:center;
-}
-.ydash-icon.amber{ background:#FBEBD2; color:var(--gold); }
-.ydash-icon.rose{ background:#FBE0DE; color:var(--rust); }
-.ydash-icon.blue{ background:#E3ECF7; color:#3B6EA8; }
-.ydash-icon.green{ background:#E1F0EA; color:var(--teal); }
-.ydash-icon.purple{ background:#EDE3F7; color:#7A4FA0; }
-.ydash-card-title{ flex:1; min-width:0; }
-.ydash-card-title h2{ font-size:18px; margin:0; }
-.ydash-card-title p{ font-size:15px; color:var(--ink-soft); margin:4px 0 0; }
-.ydash-viewall{
-  font-size:14px; font-weight:700; color:var(--teal); text-decoration:none; white-space:nowrap;
-}
-.ydash-viewall:hover{ text-decoration:underline; }
-.ydash-body{ flex:1; display:flex; flex-direction:column; }
-.ydash-body p, .ydash-body span, .ydash-body div, .ydash-body label{ font-size:16px; }
-.ydash-empty{ color:var(--ink-soft); font-size:16px; margin:0; }
-
-/* Moved-in existing cards (visit / availability / messages / profile
-   photo) lose their old boxed dash-card look and duplicate <h2> once
-   they're relocated into a .ydash-body slot — the new card header
-   above already provides the title, and the outer .ydash-card already
-   provides the border/padding. See renderYouthDashboard() in the
-   script below for what actually gets moved. */
-.ydash-body .dash-card{
-  background:transparent; border:none; padding:0; margin:0; border-radius:0;
-}
-.ydash-body .dash-card h2{ display:none; }
-
-/* Card 1 — Upcoming Visit */
-.yvisit-detail{ background:var(--paper-deep); border-radius:14px; padding:18px 20px; }
-.yvisit-detail .status-badge{ margin-bottom:10px; }
-.yvisit-row{ display:flex; align-items:center; gap:8px; color:var(--ink-soft); font-size:15px; margin-top:6px; }
-
-/* Card 2 — My Impact */
-.yimpact-number-row{ display:flex; align-items:center; gap:18px; }
-.yimpact-avatar{
-  width:64px; height:64px; border-radius:50%; background:var(--paper-deep);
-  display:flex; align-items:center; justify-content:center; flex-shrink:0;
-}
-.yimpact-number{ font-size:40px; font-weight:700; color:var(--ink); line-height:1; }
-.yimpact-label{ font-size:15px; color:var(--ink-soft); margin-top:4px; }
-.yimpact-form{ margin-top:22px; padding-top:20px; border-top:1px solid var(--line); }
-.yimpact-form .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.yimpact-form .field{ margin-bottom:12px; }
-.yimpact-form label{ display:block; font-size:14px; font-weight:600; margin-bottom:6px; color:var(--ink-soft); }
-.yimpact-form input, .yimpact-form textarea{
-  width:100%; padding:11px 13px; border-radius:10px; border:2px solid var(--line);
-  font-family:'Inter'; font-size:16px; color:var(--ink);
-}
-.yimpact-form input:focus, .yimpact-form textarea:focus{ border-color:var(--teal); }
-
-/* Card 3 — Profile Progress */
-.yprofile-top{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
-.yprofile-photo-wrap{ text-align:center; }
-.yprofile-photo-wrap .match-avatar{ margin:0 auto; }
-.yprofile-photo-wrap label.btn{ margin-top:8px; font-size:13px; padding:6px 14px; min-height:0; }
-.yring-wrap{ display:flex; align-items:center; gap:12px; }
-.yring-percent{ font-size:17px; font-weight:700; color:var(--ink); }
-.yprofile-cta{ margin-top:18px; }
-.yprofile-edit-form{ margin-top:18px; padding-top:18px; border-top:1px solid var(--line); }
-.yprofile-edit-form .field{ margin-bottom:14px; }
-.yprofile-edit-form label{ display:block; font-size:14px; font-weight:600; margin-bottom:6px; color:var(--ink-soft); }
-.yprofile-edit-form input, .yprofile-edit-form textarea{
-  width:100%; padding:11px 13px; border-radius:10px; border:2px solid var(--line);
-  font-family:'Inter'; font-size:16px; color:var(--ink);
-}
-.yprofile-edit-form input:focus, .yprofile-edit-form textarea:focus{ border-color:var(--teal); }
-
-/* Card 4 — Availability: reuse .avail-grid-v2 exactly, no restyle needed
-   (its selected-cell color already IS var(--teal), a dark green,
-   matching the mockup). Just tone down the wrapper's own spacing since
-   it now lives inside a .ydash-card that already has padding. */
-.ydash-body .avail-grid-wrap{ margin-top:4px; }
-
-/* Card 5 — Messages: reuse .inline-chat-box/.inline-msg as-is — already
-   light bubbles left / dark green bubbles right. Move the timestamp to
-   sit under each bubble instead of above it, per the new visual. */
-.inline-msg-meta{ order:2; margin-bottom:0; margin-top:4px; opacity:.55; }
-.inline-msg{ display:flex; flex-direction:column; }
-
-/* Card 6 — Quick Links */
-.ylinks-list{ display:flex; flex-direction:column; }
-.ylink-row{
-  display:flex; align-items:center; gap:14px; padding:14px 0;
-  border-bottom:1px solid var(--line); text-decoration:none; color:inherit;
-}
-.ylinks-list a.ylink-row:hover{ color:var(--teal); }
-.ylink-row:last-of-type{ border-bottom:none; }
-.ylink-icon{
-  width:38px; height:38px; border-radius:10px; flex-shrink:0;
-  background:var(--paper-deep); display:flex; align-items:center; justify-content:center;
-}
-.ylink-text{ flex:1; min-width:0; }
-.ylink-text strong{ display:block; font-size:16px; }
-.ylink-text span{ display:block; font-size:14px; color:var(--ink-soft); margin-top:2px; }
-.ylink-chevron{ flex-shrink:0; color:var(--ink-soft); }
-.ylinks-cta{ width:100%; margin-top:16px; }
-
 </style>
 </head>
 <body>
@@ -800,266 +657,92 @@ footer a:hover{color:#fff;}
 
 <div class="dash-shell">
   <div class="dash-greeting">
-    <span class="eyebrow" id="dashEyebrow">Your CareQuest</span>
+    <span class="eyebrow">Your CareQuest</span>
     <h1 id="memberGreeting">Welcome back</h1>
-    <p id="dashSubtitle">Everything about your match, in one place.</p>
+    <p>Everything about your match, in one place.</p>
   </div>
 
-  <!-- Youth only, shown instead of everything else below until
-       interview_status = 'approved'. See renderInterviewGate() in the
-       script — none of the six dashboard cards render before then,
-       and the query that would populate them never even runs. -->
-  <div class="dash-card ystatus-card hidden" id="interviewStatusCard">
-    <div class="ystatus-icon" id="ystatusIcon">🕒</div>
-    <h2 id="ystatusHeading">Your interview is pending</h2>
-    <p id="ystatusBody">You haven't picked an interview time yet.</p>
-    <a href="youth-interview" class="btn btn-primary" id="ystatusCta">Pick an Interview Time</a>
-    <p class="ystatus-contact">Questions about your application? Email <a href="mailto:care1quest@gmail.com">care1quest@gmail.com</a> and we'll help you out.</p>
+  <div class="dash-card hidden" id="interviewStatusCard">
+    <span class="status-badge pending">🕒 Interview Pending Review</span>
+    <h2>Your Interview</h2>
+    <p>You're booked in with the CareQuest team. Once they confirm your interview, we'll start looking for your match.</p>
   </div>
 
-  <!-- Youth only, shown once approved. renderYouthDashboard() (script
-       below) relocates several elements from the legacy cards further
-       down into the slots here — same ids, same event listeners, just
-       repositioned — rather than duplicating them. -->
-  <div class="ydash-grid hidden" id="youthDashboardGrid">
-    <div class="ydash-card">
-      <div class="ydash-card-head">
-        <div class="ydash-icon amber">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M3 9h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        </div>
-        <div class="ydash-card-title"><h2>Upcoming Visit</h2></div>
-      </div>
-      <div class="ydash-body">
-        <p class="ydash-empty hidden" id="ydashVisitEmpty">You'll see your upcoming visits here once you're matched with a senior.</p>
-        <div id="ydashVisitSlot"></div>
-      </div>
-    </div>
+  <div class="dash-card hidden" id="noMatchCard">
+    <h2>No Match Yet</h2>
+    <p>We're finding the right match for you. Check back soon — we'll let you know as soon as it happens.</p>
+  </div>
 
-    <div class="ydash-card">
-      <div class="ydash-card-head">
-        <div class="ydash-icon rose">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.5C.7 8 2.4 4.5 6 4.5c2 0 3.3 1 4 2.3.7-1.3 2-2.3 4-2.3 3.6 0 5.3 3.5 3.5 7C19 15.65 12 20 12 20z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="ydash-card-title"><h2>My Impact</h2></div>
+  <div class="dash-card hidden" id="matchInfoCard">
+    <span class="status-badge matched">🤝 Matched</span>
+    <h2>Your Match</h2>
+    <div class="match-card">
+      <div class="match-avatar" id="mpAvatar">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
       </div>
-      <div class="ydash-body">
-        <div class="yimpact-number-row">
-          <div class="yimpact-avatar">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#B0492E" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#B0492E" stroke-width="1.6" stroke-linecap="round"/></svg>
-          </div>
-          <div>
-            <div class="yimpact-number" id="hoursTotalDisplay">0</div>
-            <div class="yimpact-label">Hours Volunteered</div>
-          </div>
-        </div>
-        <form class="yimpact-form" id="logHoursForm">
-          <div class="field-row">
-            <div class="field">
-              <label for="logHoursDate">Date</label>
-              <input type="date" id="logHoursDate" required>
-            </div>
-            <div class="field">
-              <label for="logHoursAmount">Hours</label>
-              <input type="number" id="logHoursAmount" min="0.25" max="24" step="0.25" required>
-            </div>
-          </div>
-          <div class="field">
-            <label for="logHoursNote">Note (optional)</label>
-            <input type="text" id="logHoursNote" placeholder="What did you do?" maxlength="200">
-          </div>
-          <button type="submit" class="btn btn-primary" id="logHoursSubmitBtn">Log Hours</button>
-          <p id="logHoursStatus" style="margin-top:10px; font-size:14px; color:var(--teal-deep); font-weight:700; display:none;"></p>
-        </form>
-      </div>
-    </div>
-
-    <div class="ydash-card">
-      <div class="ydash-card-head">
-        <div class="ydash-icon blue">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 17l6-6 4 4 8-8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 7h6v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="ydash-card-title">
-          <h2>Profile Progress</h2>
-          <p>Complete your profile so your match can get to know you.</p>
-        </div>
-      </div>
-      <div class="ydash-body">
-        <div class="yprofile-top">
-          <div id="ydashAvatarSlot"></div>
-          <div class="yring-wrap">
-            <svg width="56" height="56" viewBox="0 0 56 56">
-              <circle cx="28" cy="28" r="24" fill="none" stroke="var(--paper-deep)" stroke-width="6"/>
-              <circle cx="28" cy="28" r="24" fill="none" stroke="var(--teal)" stroke-width="6" stroke-linecap="round"
-                      id="profileRingCircle" transform="rotate(-90 28 28)" stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
-            </svg>
-            <span class="yring-percent" id="profilePercentText">0% Complete</span>
-          </div>
-        </div>
-        <button type="button" class="btn btn-outline yprofile-cta" id="completeProfileBtn">Complete Profile</button>
-        <form class="yprofile-edit-form hidden" id="completeProfileForm">
-          <div class="field">
-            <label for="cpLastName">Last name</label>
-            <input type="text" id="cpLastName">
-          </div>
-          <div class="field">
-            <label for="cpPhone">Phone</label>
-            <input type="tel" id="cpPhone">
-          </div>
-          <div class="field">
-            <label for="cpAge">Age</label>
-            <input type="number" id="cpAge" min="0" max="120">
-          </div>
-          <div class="field">
-            <label for="cpInterests">Interests</label>
-            <input type="text" id="cpInterests" placeholder="Comma-separated, e.g. gardening, chess">
-          </div>
-          <button type="submit" class="btn btn-primary" id="cpSaveBtn">Save Profile</button>
-          <p id="cpStatus" style="margin-top:10px; font-size:14px; color:var(--teal-deep); font-weight:700; display:none;"></p>
-        </form>
-      </div>
-    </div>
-
-    <div class="ydash-card">
-      <div class="ydash-card-head">
-        <div class="ydash-icon green">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="ydash-card-title">
-          <h2>Your Availability</h2>
-          <p>Tell us when you're free so we can match you with visits that work for you.</p>
-        </div>
-      </div>
-      <div class="ydash-body" id="ydashAvailSlot"></div>
-    </div>
-
-    <div class="ydash-card">
-      <div class="ydash-card-head">
-        <div class="ydash-icon amber">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H8l-4 3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="ydash-card-title"><h2>Messages</h2></div>
-        <a href="messages" class="ydash-viewall">View all</a>
-      </div>
-      <div class="ydash-body">
-        <p class="ydash-empty hidden" id="ydashChatEmpty">You'll be able to message your match here once you're matched.</p>
-        <div id="ydashChatSlot"></div>
-      </div>
-    </div>
-
-    <div class="ydash-card">
-      <div class="ydash-card-head">
-        <div class="ydash-icon purple">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 15l6-6M10 6l1-1a4 4 0 015.5 5.5l-1 1M14 18l-1 1A4 4 0 017.5 13.5l1-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        </div>
-        <div class="ydash-card-title"><h2>Quick Links</h2></div>
-      </div>
-      <div class="ydash-body">
-        <div class="ylinks-list">
-          <a href="messages" class="ylink-row">
-            <div class="ylink-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H8l-4 3z" stroke="#2F6B62" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
-            <div class="ylink-text"><strong>Messages</strong><span>Chat with your match</span></div>
-            <svg class="ylink-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
-          <a href="about#how" class="ylink-row">
-            <div class="ylink-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#2F6B62" stroke-width="1.6"/><path d="M12 8v5M12 16h.01" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg></div>
-            <div class="ylink-text"><strong>How CareQuest Works</strong><span>A refresher on the program</span></div>
-            <svg class="ylink-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
-          <a href="mailto:care1quest@gmail.com" class="ylink-row">
-            <div class="ylink-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 19c-4-3-8-6-8-10a4 4 0 018-2 4 4 0 018 2c0 4-4 7-8 10z" stroke="#2F6B62" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
-            <div class="ylink-text"><strong>Contact &amp; Support</strong><span>Reach the CareQuest team</span></div>
-            <svg class="ylink-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
-        </div>
-        <a href="youth-dashboard" class="btn btn-outline ylinks-cta">Manage Your Details</a>
+      <div>
+        <strong id="mpName" style="font-size:19px;">—</strong>
+        <div class="match-tags" id="mpTags"></div>
       </div>
     </div>
   </div>
 
-  <!-- Senior view (unchanged) — also where the youth-relevant elements
-       above actually live in the markup; renderYouthDashboard() moves
-       specific pieces of these into the slots above for an approved
-       youth, hides this whole wrapper, and leaves this exactly as-is
-       for a senior. -->
-  <div id="legacyDashboardCards">
-    <div class="dash-card hidden" id="noMatchCard">
-      <h2>No Match Yet</h2>
-      <p>We're finding the right match for you. Check back soon — we'll let you know as soon as it happens.</p>
-    </div>
-
-    <div class="dash-card hidden" id="matchInfoCard">
-      <span class="status-badge matched">🤝 Matched</span>
-      <h2>Your Match</h2>
-      <div class="match-card">
-        <div class="match-avatar" id="mpAvatar">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
-        </div>
-        <div>
-          <strong id="mpName" style="font-size:19px;">—</strong>
-          <div class="match-tags" id="mpTags"></div>
-        </div>
+  <div class="dash-card" id="profilePhotoCard">
+    <h2>Profile Photo</h2>
+    <p>Add a photo so your match can put a face to your name.</p>
+    <div style="display:flex; align-items:center; gap:20px; margin-top:16px; flex-wrap:wrap;">
+      <div class="match-avatar" id="myAvatarPreview" style="width:88px; height:88px;">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <label for="avatarFileInput" class="btn btn-outline" style="cursor:pointer;">Choose Photo</label>
+        <input type="file" id="avatarFileInput" accept="image/png, image/jpeg, image/webp" style="display:none;">
+        <p id="avatarUploadStatus" style="margin-top:8px; font-size:14px; color:var(--ink-soft);"></p>
       </div>
     </div>
+  </div>
 
-    <div class="dash-card" id="profilePhotoCard">
-      <h2>Profile Photo</h2>
-      <p>Add a photo so your match can put a face to your name.</p>
-      <div id="avatarUploadRow" style="display:flex; align-items:center; gap:20px; margin-top:16px; flex-wrap:wrap;">
-        <div class="match-avatar" id="myAvatarPreview" style="width:88px; height:88px;">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
-        </div>
-        <div>
-          <label for="avatarFileInput" class="btn btn-outline" style="cursor:pointer;">Choose Photo</label>
-          <input type="file" id="avatarFileInput" accept="image/png, image/jpeg, image/webp" style="display:none;">
-          <p id="avatarUploadStatus" style="margin-top:8px; font-size:14px; color:var(--ink-soft);"></p>
-        </div>
-      </div>
+  <div class="dash-card" id="availabilityCard">
+    <h2>🗓️ Your Weekly Availability</h2>
+    <p style="color:var(--ink-soft); font-size:16px;">Tap the times you're usually free every week. Once you're matched, this is what your match sees when booking a visit.</p>
+    <div class="avail-grid-wrap">
+      <table class="avail-grid-v2" id="availGridTable">
+        <thead><tr><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
     </div>
+    <p class="avail-summary" id="availSummary">Loading your availability…</p>
+    <button type="button" class="btn btn-primary" id="saveAvailBtn" style="margin-top:8px;">Save Availability</button>
+    <p id="availSaveStatus" style="margin-top:10px; font-size:15px; color:var(--teal-deep); font-weight:700; display:none;">Saved ✓</p>
+  </div>
 
-    <div class="dash-card" id="availabilityCard">
-      <h2>🗓️ Your Weekly Availability</h2>
-      <p style="color:var(--ink-soft); font-size:16px;">Tap the times you're usually free every week. Once you're matched, this is what your match sees when booking a visit.</p>
-      <div id="availabilityContent">
-        <div class="avail-grid-wrap">
-          <table class="avail-grid-v2" id="availGridTable">
-            <thead><tr><th></th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <p class="avail-summary" id="availSummary">Loading your availability…</p>
-        <button type="button" class="btn btn-primary" id="saveAvailBtn" style="margin-top:8px;">Save Availability</button>
-        <p id="availSaveStatus" style="margin-top:10px; font-size:15px; color:var(--teal-deep); font-weight:700; display:none;">Saved ✓</p>
-      </div>
-    </div>
+  <div class="dash-card hidden" id="upcomingVisitCard">
+    <span class="status-badge verified">✓ Visit Scheduled</span>
+    <h2>📅 Upcoming Visit</h2>
+    <p id="upcomingVisitText" style="font-size:18px; font-weight:600;">—</p>
+    <button type="button" class="btn btn-outline" id="cancelVisitBtn" style="margin-top:10px;">Cancel Visit</button>
+  </div>
 
-    <div class="dash-card hidden" id="upcomingVisitCard">
-      <span class="status-badge verified">✓ Visit Scheduled</span>
-      <h2>📅 Upcoming Visit</h2>
-      <p id="upcomingVisitText" style="font-size:18px; font-weight:600;">—</p>
-      <button type="button" class="btn btn-outline" id="cancelVisitBtn" style="margin-top:10px;">Cancel Visit</button>
+  <div class="dash-card hidden" id="scheduleCard">
+    <h2>📅 Schedule a Visit</h2>
+    <p id="scheduleIntroText" style="color:var(--ink-soft); font-size:16px;">No visit scheduled yet.</p>
+    <button type="button" class="btn btn-primary" id="scheduleVisitBtn">Schedule a Visit</button>
+    <div class="hidden" id="slotPicker" style="margin-top:22px;">
+      <p id="slotPickerStatus" style="font-size:16px; color:var(--ink-soft);">Finding times that work for both of you…</p>
+      <div id="slotList"></div>
+      <button type="button" class="btn btn-primary hidden" id="confirmVisitBtn" style="margin-top:10px;" disabled>Confirm Visit</button>
     </div>
+  </div>
 
-    <div class="dash-card hidden" id="scheduleCard">
-      <h2>📅 Schedule a Visit</h2>
-      <p id="scheduleIntroText" style="color:var(--ink-soft); font-size:16px;">No visit scheduled yet.</p>
-      <button type="button" class="btn btn-primary" id="scheduleVisitBtn">Schedule a Visit</button>
-      <div class="hidden" id="slotPicker" style="margin-top:22px;">
-        <p id="slotPickerStatus" style="font-size:16px; color:var(--ink-soft);">Finding times that work for both of you…</p>
-        <div id="slotList"></div>
-        <button type="button" class="btn btn-primary hidden" id="confirmVisitBtn" style="margin-top:10px;" disabled>Confirm Visit</button>
-      </div>
+  <div class="dash-card hidden" id="inlineChatCard">
+    <h2>💬 Messages</h2>
+    <p style="color:var(--ink-soft); font-size:16px;">Recent messages with your match.</p>
+    <div class="inline-chat-box" id="inlineChatBox"></div>
+    <div class="inline-chat-input-row">
+      <input type="text" id="inlineChatInput" placeholder="Type a message…">
+      <button type="button" class="btn btn-primary" id="inlineChatSendBtn">Send</button>
     </div>
-
-    <div class="dash-card hidden" id="inlineChatCard">
-      <h2>💬 Messages</h2>
-      <p style="color:var(--ink-soft); font-size:16px;">Recent messages with your match.</p>
-      <div class="inline-chat-box" id="inlineChatBox"></div>
-      <div class="inline-chat-input-row">
-        <input type="text" id="inlineChatInput" placeholder="Type a message…">
-        <button type="button" class="btn btn-primary" id="inlineChatSendBtn">Send</button>
-      </div>
-      <p style="margin-top:14px;"><a href="messages" style="color:var(--teal); font-weight:700; text-decoration:none; font-size:15px;">See full message history →</a></p>
-    </div>
+    <p style="margin-top:14px;"><a href="messages" style="color:var(--teal); font-weight:700; text-decoration:none; font-size:15px;">See full message history →</a></p>
   </div>
 </div>
 
@@ -1094,14 +777,6 @@ footer a:hover{color:#fff;}
   let partnerNameGlobal = 'your match';
   let myAvailability = [];
   let selectedSlot = null;
-
-  // Youth "Profile Progress" ring — which youth_profiles fields count
-  // toward completion, and the current values used to compute it.
-  // first_name/email are required at signup so they're always filled;
-  // these five are the ones actually worth prompting someone to add.
-  const PROFILE_FIELDS = ['last_name', 'phone', 'age', 'interests', 'avatar_url'];
-  const PROFILE_RING_CIRCUMFERENCE = 150.8; // 2 * PI * 24, matches the r=24 SVG circle
-  let profileFieldsState = {};
 
   function blockKey(day, start, end){ return day + '|' + start + '|' + end; }
 
@@ -1584,199 +1259,6 @@ footer a:hover{color:#fff;}
 
     await showAvatarFromPath(document.getElementById('myAvatarPreview'), path);
     statusEl.textContent = 'Photo updated.';
-
-    if(currentRole === 'youth'){
-      profileFieldsState.avatar_url = path;
-      refreshProfileRing();
-    }
-  }
-
-  // ---------------------------------------------------------
-  // Youth "Profile Progress" card — completion ring + inline edit form
-  // for whichever youth_profiles fields are still missing.
-  // ---------------------------------------------------------
-  function computeProfileCompletion(){
-    const filled = PROFILE_FIELDS.filter(f => {
-      const v = profileFieldsState[f];
-      return v !== null && v !== undefined && String(v).trim() !== '';
-    }).length;
-    return Math.round((filled / PROFILE_FIELDS.length) * 100);
-  }
-
-  function refreshProfileRing(){
-    const pct = computeProfileCompletion();
-    document.getElementById('profileRingCircle')
-      .setAttribute('stroke-dashoffset', String(PROFILE_RING_CIRCUMFERENCE * (1 - pct / 100)));
-    document.getElementById('profilePercentText').textContent = pct + '% Complete';
-  }
-
-  function initProfileProgress(youthProfile){
-    profileFieldsState = {
-      last_name: youthProfile.last_name,
-      phone: youthProfile.phone,
-      age: youthProfile.age,
-      interests: youthProfile.interests,
-      avatar_url: youthProfile.avatar_url
-    };
-    refreshProfileRing();
-
-    document.getElementById('cpLastName').value = youthProfile.last_name || '';
-    document.getElementById('cpPhone').value = youthProfile.phone || '';
-    document.getElementById('cpAge').value = youthProfile.age || '';
-    document.getElementById('cpInterests').value = youthProfile.interests || '';
-  }
-
-  async function handleCompleteProfileSubmit(e){
-    e.preventDefault();
-    const btn = document.getElementById('cpSaveBtn');
-    const statusEl = document.getElementById('cpStatus');
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
-
-    const updated = {
-      last_name: document.getElementById('cpLastName').value.trim() || null,
-      phone: document.getElementById('cpPhone').value.trim() || null,
-      age: document.getElementById('cpAge').value ? Number(document.getElementById('cpAge').value) : null,
-      interests: document.getElementById('cpInterests').value.trim() || null
-    };
-
-    const { error } = await cq.from('youth_profiles').update(updated).eq('id', currentUserId);
-
-    btn.disabled = false;
-    btn.textContent = 'Save Profile';
-    statusEl.style.display = 'block';
-
-    if(error){
-      console.error('Could not save profile:', error);
-      statusEl.textContent = 'Could not save your profile. Please try again.';
-      statusEl.style.color = 'var(--rust)';
-      return;
-    }
-
-    Object.assign(profileFieldsState, updated);
-    refreshProfileRing();
-    statusEl.textContent = 'Saved ✓';
-    statusEl.style.color = 'var(--teal-deep)';
-  }
-
-  // ---------------------------------------------------------
-  // Youth "My Impact" card — total logged hours + the log-hours form.
-  // ---------------------------------------------------------
-  async function loadHoursTotal(){
-    const { data, error } = await cq
-      .from('volunteer_hours')
-      .select('hours')
-      .eq('user_id', currentUserId);
-
-    if(error){
-      console.error('volunteer_hours lookup failed:', error);
-      return;
-    }
-
-    const total = (data || []).reduce((sum, row) => sum + Number(row.hours), 0);
-    document.getElementById('hoursTotalDisplay').textContent = String(Math.round(total * 100) / 100);
-  }
-
-  async function handleLogHours(e){
-    e.preventDefault();
-    const btn = document.getElementById('logHoursSubmitBtn');
-    const statusEl = document.getElementById('logHoursStatus');
-    const dateVal = document.getElementById('logHoursDate').value;
-    const hoursVal = Number(document.getElementById('logHoursAmount').value);
-    const noteVal = document.getElementById('logHoursNote').value.trim();
-
-    statusEl.style.display = 'block';
-
-    if(!dateVal || !hoursVal || hoursVal <= 0){
-      statusEl.textContent = 'Please enter a date and a positive number of hours.';
-      statusEl.style.color = 'var(--rust)';
-      return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = 'Logging…';
-
-    const { error } = await cq.from('volunteer_hours').insert({
-      user_id: currentUserId,
-      logged_date: dateVal,
-      hours: hoursVal,
-      note: noteVal || null
-    });
-
-    btn.disabled = false;
-    btn.textContent = 'Log Hours';
-
-    if(error){
-      console.error('Could not log hours:', error);
-      statusEl.textContent = 'Could not log those hours. Please try again.';
-      statusEl.style.color = 'var(--rust)';
-      return;
-    }
-
-    document.getElementById('logHoursForm').reset();
-    statusEl.textContent = 'Hours logged ✓';
-    statusEl.style.color = 'var(--teal-deep)';
-    await loadHoursTotal();
-  }
-
-  // ---------------------------------------------------------
-  // Youth interview gate + six-card dashboard — see loadMember() for
-  // when these are called. renderYouthDashboard() relocates a handful
-  // of existing, already-wired elements (the availability table, the
-  // inline chat thread, the visit-scheduling cards, the avatar upload
-  // row) into the new card layout via appendChild, which moves a DOM
-  // node — and any event listeners already attached to it — rather
-  // than cloning it. Their ids and the functions above that populate
-  // them (buildAvailabilityGrid, refreshUpcomingVisit, appendInlineMessage,
-  // etc.) are completely unchanged; only where they end up in the page
-  // is different. The senior layout below is never touched.
-  // ---------------------------------------------------------
-  function renderYouthDashboard(){
-    document.getElementById('legacyDashboardCards').classList.add('hidden');
-    document.getElementById('youthDashboardGrid').classList.remove('hidden');
-
-    document.getElementById('ydashVisitSlot').appendChild(document.getElementById('upcomingVisitCard'));
-    document.getElementById('ydashVisitSlot').appendChild(document.getElementById('scheduleCard'));
-    document.getElementById('ydashAvailSlot').appendChild(document.getElementById('availabilityContent'));
-    document.getElementById('ydashChatSlot').appendChild(document.getElementById('inlineChatCard'));
-    document.getElementById('ydashAvatarSlot').appendChild(document.getElementById('avatarUploadRow'));
-  }
-
-  function renderInterviewGate(youthProfile){
-    const status = youthProfile.interview_status;
-    const iconEl = document.getElementById('ystatusIcon');
-    const headingEl = document.getElementById('ystatusHeading');
-    const bodyEl = document.getElementById('ystatusBody');
-    const ctaEl = document.getElementById('ystatusCta');
-
-    if(status === 'scheduled'){
-      let when = null;
-      if(youthProfile.interview_scheduled_at){
-        const { DateTime } = luxon;
-        when = DateTime.fromISO(youthProfile.interview_scheduled_at, { zone: 'utc' })
-          .setZone(TIME_ZONE).toFormat("cccc, LLLL d 'at' h:mm a");
-      }
-      iconEl.textContent = '📅';
-      headingEl.textContent = 'Your interview is scheduled';
-      bodyEl.textContent = when
-        ? 'Your interview is scheduled for ' + when + '. Once it happens, our team will follow up to let you know next steps.'
-        : "Your interview is booked — we'll be in touch with the details.";
-      ctaEl.textContent = 'Change Your Interview Time';
-      ctaEl.classList.remove('hidden');
-    } else if(status === 'rejected'){
-      iconEl.textContent = '💬';
-      headingEl.textContent = 'Thanks for your interest in CareQuest';
-      bodyEl.textContent = "We won't be moving forward with your volunteer application at this time. If you have questions, we're happy to talk it through.";
-      ctaEl.classList.add('hidden');
-    } else {
-      iconEl.textContent = '🕒';
-      headingEl.textContent = 'Your interview is pending';
-      bodyEl.textContent = "You haven't picked an interview time yet — book one below and our team will follow up after.";
-      ctaEl.textContent = 'Pick an Interview Time';
-      ctaEl.classList.remove('hidden');
-    }
-
-    document.getElementById('interviewStatusCard').classList.remove('hidden');
   }
 
   buildAvailabilityGrid();
@@ -1789,11 +1271,6 @@ footer a:hover{color:#fff;}
     if(e.key === 'Enter') sendInlineMessage();
   });
   document.getElementById('avatarFileInput').addEventListener('change', handleAvatarUpload);
-  document.getElementById('completeProfileBtn').addEventListener('click', () => {
-    document.getElementById('completeProfileForm').classList.toggle('hidden');
-  });
-  document.getElementById('completeProfileForm').addEventListener('submit', handleCompleteProfileSubmit);
-  document.getElementById('logHoursForm').addEventListener('submit', handleLogHours);
 
   // Supabase can take a moment to restore a persisted session from
   // localStorage right after a fresh page load. A bare getSession()
@@ -1864,9 +1341,7 @@ footer a:hover{color:#fff;}
       // point the matches query at the wrong column, and show
       // "No Match Yet" even when a match genuinely exists.
       const [{ data: youthProfile, error: youthProfileErr }, { data: seniorProfile, error: seniorProfileErr }] = await Promise.all([
-        cq.from('youth_profiles')
-          .select('first_name, last_name, phone, age, interests, interview_status, interview_scheduled_at, avatar_url')
-          .eq('id', session.user.id).maybeSingle(),
+        cq.from('youth_profiles').select('first_name, interview_status, avatar_url').eq('id', session.user.id).maybeSingle(),
         cq.from('senior_profiles').select('full_name, avatar_url').eq('id', session.user.id).maybeSingle()
       ]);
 
@@ -1879,6 +1354,9 @@ footer a:hover{color:#fff;}
         role = 'youth';
         displayFirstName = youthProfile.first_name;
         myAvatarUrl = youthProfile.avatar_url;
+        if(youthProfile.interview_status !== 'verified'){
+          document.getElementById('interviewStatusCard').classList.remove('hidden');
+        }
       } else if(seniorProfile){
         role = 'senior';
         displayFirstName = seniorProfile.full_name.split(' ')[0];
@@ -1894,27 +1372,11 @@ footer a:hover{color:#fff;}
       }
       currentRole = role;
 
-      document.getElementById('memberGreeting').textContent = 'Welcome back, ' + displayFirstName;
-
-      // Youth dashboard is gated on interview approval — nothing below
-      // this block runs (no availability/match/messages queries at all)
-      // until interview_status is 'approved'. The RLS policies in
-      // supabase-schema.sql enforce the same gate server-side, so this
-      // is a UX shortcut, not the actual security boundary.
-      if(role === 'youth'){
-        document.getElementById('dashSubtitle').textContent = 'Find meaningful ways to help and grow.';
-        if(youthProfile.interview_status !== 'approved'){
-          renderInterviewGate(youthProfile);
-          return;
-        }
-        renderYouthDashboard();
-        initProfileProgress(youthProfile);
-        loadHoursTotal();
-      }
-
       if(myAvatarUrl){
         await showAvatarFromPath(document.getElementById('myAvatarPreview'), myAvatarUrl);
       }
+
+      document.getElementById('memberGreeting').textContent = 'Welcome back, ' + displayFirstName;
 
       const { data: availRows } = await cq
         .from('availability')
@@ -1935,12 +1397,7 @@ footer a:hover{color:#fff;}
       if(matchErr) console.error('matches lookup failed for', filterCol, '=', session.user.id, matchErr);
 
       if(!match){
-        if(role === 'youth'){
-          document.getElementById('ydashVisitEmpty').classList.remove('hidden');
-          document.getElementById('ydashChatEmpty').classList.remove('hidden');
-        } else {
-          document.getElementById('noMatchCard').classList.remove('hidden');
-        }
+        document.getElementById('noMatchCard').classList.remove('hidden');
         return;
       }
 
