@@ -461,8 +461,13 @@ footer a:hover{color:#fff;}
 .dash-shell{max-width:var(--max); margin:0 auto; padding:8px 28px 72px;}
 .dash-greeting{margin-bottom:2px;}
 .dash-greeting .eyebrow{margin-bottom:4px;}
-.dash-greeting h1{font-size:clamp(20px,2.4vw,26px);}
-.dash-greeting p{color:var(--ink-soft); margin-top:4px; max-width:64ch; font-size:15px;}
+/* "Welcome back, [name]" removed from view — #memberGreeting is kept
+   in the DOM (still gets its text set in loadMember()) rather than
+   deleted outright, since that's the only element the script targets
+   by this id; hiding it here has the same effect with no risk of a
+   null-reference error if that line ever runs before this rule loads. */
+.dash-greeting h1{display:none;}
+.dash-greeting p{color:var(--ink-soft); margin-top:0; max-width:64ch; font-size:15px;}
 .lock-icon{
   width:34px;height:34px;border-radius:50%;background:#fff;border:1.5px solid var(--line);
   display:flex;align-items:center;justify-content:center; flex-shrink:0;
@@ -771,41 +776,42 @@ footer a:hover{color:#fff;}
 #homePhotoRow{margin-top:24px; align-items:start;}
 #homePhotoRow > *{height:auto;}
 
-/* ---- Your Match tab: who you're matched with, then your availability
-   (capped to half width on desktop — the container is wide enough now
-   that six time-block columns still read fine at half width, no need
-   for the full row), then a compact two-column row pairing Schedule a
-   Visit with Messages + Calling. Every size below is scoped to
-   #panelMatch (via ID) so it only tightens the youth "Your Match" tab
-   — the senior view further down uses these same #availabilityCard/
-   #inlineChatCard/etc elements (moved here by JS for youth only) at
-   their original, roomier size. Goal: Your Match, Your Weekly
-   Availability, Schedule a Visit, Messages, and Calling all visible at
-   once on a normal laptop screen with no scrolling at all. On a
-   genuinely short viewport the panel still gets its own scrollbar as a
-   last-resort fallback rather than squeezing touch targets further to
-   force a fit. ---- */
-#panelMatch{padding-top:10px; padding-bottom:16px;}
-#panelMatch > * + *{margin-top:10px;}
+/* ---- Your Match tab: a single uniform 2-column grid so every
+   subsection — Your Match, Schedule a Visit, Your Weekly Availability,
+   Messages, Calling — is the same width, with no leftover empty space
+   next to Availability. #panelMatch's three real DOM children
+   (#matchStatusGroup, #availabilityCard, #matchPanelGrid — always in
+   that order, per activateYouthTabs()/loadMember() in the script
+   below) become direct grid items via display:contents on
+   #matchPanelGrid, which "unwraps" it without moving anything in the
+   DOM — the JS's insertBefore/appendChild calls, which depend on
+   #matchMainCol/#matchSideCol being where they are, are untouched.
+   `order` then arranges them visually as:
+     Your Match          | Schedule a Visit
+     Your Weekly Avail.  | Messages + Calling
+   Every size below is scoped to #panelMatch (via ID) so it only
+   tightens the youth "Your Match" tab — the senior view further down
+   uses these same #availabilityCard/#inlineChatCard/etc elements
+   (moved here by JS for youth only) at their original, roomier size.
+   Goal: everything visible at once on a normal laptop screen with no
+   scrolling. On a genuinely short viewport the panel still gets its
+   own scrollbar as a last-resort fallback rather than squeezing touch
+   targets further to force a fit. ---- */
+#panelMatch{
+  padding-top:10px; padding-bottom:16px;
+  display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;
+}
+#panelMatch > *{min-width:0;}
+#panelMatch #matchStatusGroup{order:1;}
+#panelMatch #matchPanelGrid{display:contents;}
+#panelMatch #matchMainCol{order:2;}
+#panelMatch #availabilityCard{order:3;}
+#panelMatch #matchSideCol{order:4;}
 #panelMatch .dg-card{padding:14px 18px;}
 #panelMatch .dg-card-head{margin-bottom:8px;}
 #panelMatch .dg-card-sub{margin-bottom:8px;}
-@media (min-width:901px){
-  #panelMatch #availabilityCard{max-width:50%;}
-}
-.match-panel-grid{
-  display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;
-}
 .match-panel-col{display:flex; flex-direction:column; min-width:0;}
 .match-panel-col > * + *{margin-top:10px;}
-/* Messages and Calling are always shown together (see loadMember() —
-   #inlineChatCard and #callCard are revealed in the same branch, right
-   after a match is found) and are both effectively single-action cards
-   once you're matched, so fusing them into one visually continuous
-   block — shared edge, divider instead of a second card border/shadow
-   — reads as "one card" and saves the height of a duplicate header. */
-#panelMatch #inlineChatCard{border-radius:16px 16px 0 0; box-shadow:none;}
-#panelMatch #callCard{margin-top:0; border-top:1px dashed var(--line); border-radius:0 0 16px 16px;}
 #panelMatch .inline-chat-box{min-height:130px; max-height:180px;}
 #panelMatch .avail-grid-wrap{margin-top:8px;}
 #panelMatch .avail-grid-v2{border-spacing:3px;}
@@ -817,7 +823,15 @@ footer a:hover{color:#fff;}
   #panelMatch{max-height:calc(100vh - 220px); overflow-y:auto;}
 }
 @media (max-width:900px){
-  .match-panel-grid{grid-template-columns:1fr;}
+  /* Single column: restore the natural top-to-bottom reading order
+     (Your Match, Availability, Schedule a Visit, Messages + Calling)
+     rather than the 2x2 desktop order (Schedule a Visit would
+     otherwise land above Availability). */
+  #panelMatch{grid-template-columns:1fr;}
+  #panelMatch #matchStatusGroup{order:1;}
+  #panelMatch #availabilityCard{order:2;}
+  #panelMatch #matchMainCol{order:3;}
+  #panelMatch #matchSideCol{order:4;}
 }
 
 </style>
@@ -899,10 +913,11 @@ footer a:hover{color:#fff;}
 </section>
 
 <section class="tab-panel hidden" id="panelMatch" aria-labelledby="tabBtnMatch" tabindex="-1">
-  <!-- #matchStatusGroup inserted here (JS), full width -->
-  <!-- #availabilityCard inserted here (JS), full width — needs the whole
-       panel's width so all 6 time-block columns fit without horizontal
-       scrolling; it doesn't fit readably in the narrower left column below -->
+  <!-- #matchStatusGroup inserted here (JS) -->
+  <!-- #availabilityCard inserted here (JS) — sits in its own grid cell
+       alongside Your Match/Schedule a Visit/Messages+Calling below; see
+       the CSS comment above #panelMatch for how the visual 2x2 order is
+       arranged without moving anything in the DOM. -->
   <div class="match-panel-grid" id="matchPanelGrid">
     <div class="match-panel-col" id="matchMainCol">
       <!-- #visitCardGroup inserted here (JS) -->
