@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@^2.49.4/dist/umd/supabase.js"></script>
 <script src="js/supabaseClient.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+<script src="https://unpkg.com/@daily-co/daily-js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -741,6 +742,48 @@ footer a:hover{color:#fff;}
 
 @media (max-width:640px){ .dg-card{padding:22px 20px;} }
 
+/* ===================================================
+   MEMBER TABS (Youth: Home / Your Match / Opportunities & Impact)
+=================================================== */
+.member-tabs{
+  max-width:var(--max); margin:0 auto; padding:24px 28px 0;
+  display:flex; gap:6px; border-bottom:1px solid var(--line); flex-wrap:wrap;
+}
+.member-tab-btn{
+  appearance:none; background:none; border:none; cursor:pointer;
+  font-family:'Inter',sans-serif; font-weight:700; font-size:16px; color:var(--ink-soft);
+  padding:13px 16px; border-radius:10px 10px 0 0; margin-bottom:-1px; min-height:48px;
+  border-bottom:3px solid transparent;
+  transition:color .15s ease, border-color .15s ease;
+}
+.member-tab-btn:hover{color:var(--teal);}
+.member-tab-btn.active{color:var(--teal-deep); border-bottom-color:var(--teal);}
+.member-tab-btn:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
+
+.tab-panel{max-width:var(--max); margin:0 auto; padding:24px 28px 56px;}
+.tab-panel:focus{outline:none;}
+
+#homePhotoRow{margin-top:24px;}
+
+/* ---- Your Match tab: a compact two-column layout that tries to fit
+   in one screen (left: match/availability/schedule, right: messages +
+   calling) instead of a long single-column scroll. On short viewports
+   the panel itself gets a scrollbar as a fallback — individual cards
+   keep their natural, readable size (touch targets stay full-size)
+   rather than being squeezed to force a fit. ---- */
+.match-panel-grid{
+  display:grid; grid-template-columns:1.5fr 1fr; gap:20px; align-items:start;
+}
+.match-panel-col{display:flex; flex-direction:column; gap:16px; min-width:0;}
+.match-panel-col .dg-card{padding:20px 22px;}
+.match-panel-col .dg-card-head{margin-bottom:12px;}
+@media (min-width:1024px){
+  #panelMatch{max-height:calc(100vh - 260px); overflow-y:auto;}
+}
+@media (max-width:900px){
+  .match-panel-grid{grid-template-columns:1fr;}
+}
+
 </style>
 </head>
 <body>
@@ -758,11 +801,87 @@ footer a:hover{color:#fff;}
 </header>
 <script src="js/authHeader.js"></script>
 
-<section class="dash-grid-wrap hidden" id="youthDashSection" aria-labelledby="youthSectionHeading">
-  <div class="dash-section-head">
-    <h2 id="youthSectionHeading">Youth</h2>
-    <p>Your opportunities, impact, and quick links.</p>
+<div class="dash-greeting" style="max-width:var(--max); margin:0 auto; padding:40px 28px 0;">
+  <span class="eyebrow">Your CareQuest</span>
+  <h1 id="memberGreeting">Welcome back</h1>
+  <p>Everything about your match, in one place.</p>
+</div>
+
+<!-- ===================================================
+     YOUTH VIEW — three tabs (Home / Your Match / Opportunities
+     & Impact). Hidden until the signed-in user is confirmed to be a
+     youth account; the shared cards below (match status, availability,
+     schedule, messages) are MOVED into these panels by JS at that
+     point, not duplicated — there is exactly one #availabilityCard
+     etc. in the whole page, wherever it currently lives. -->
+<nav class="member-tabs hidden" id="memberTabs" aria-label="Your CareQuest sections">
+  <button type="button" class="member-tab-btn" id="tabBtnHome" data-tab="home">Home</button>
+  <button type="button" class="member-tab-btn hidden" id="tabBtnMatch" data-tab="match">Your Match</button>
+  <button type="button" class="member-tab-btn hidden" id="tabBtnOpportunities" data-tab="opportunities">Opportunities &amp; Impact</button>
+</nav>
+
+<section class="tab-panel hidden" id="panelHome" aria-labelledby="tabBtnHome" tabindex="-1">
+  <!-- #interviewStatusCard is inserted here (JS) when not yet verified -->
+  <div class="dash-grid-2" id="homePhotoRow">
+    <!-- #profilePhotoCard is inserted here (JS) -->
+    <div class="dg-card" id="editProfileCard">
+      <div class="dg-card-head">
+        <div class="dg-badge dg-badge-mint" id="editProfileBadgeIcon"></div>
+        <h3 class="dg-card-title">Your Details</h3>
+      </div>
+      <p class="dg-card-sub">Keep this up to date — it's what we used to help find your match.</p>
+      <form id="editProfileForm">
+        <div class="field-row">
+          <div class="field">
+            <label for="editFirstName">First name</label>
+            <input type="text" id="editFirstName" required>
+          </div>
+          <div class="field">
+            <label for="editLastName">Last name</label>
+            <input type="text" id="editLastName">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="editPhone">Phone</label>
+            <input type="tel" id="editPhone">
+          </div>
+          <div class="field">
+            <label for="editAge">Age</label>
+            <input type="number" id="editAge" min="0">
+          </div>
+        </div>
+        <div class="field">
+          <label>Hobbies &amp; Interests <span class="field-hint">(used to match you with a senior)</span></label>
+          <textarea id="editInterests" rows="3"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" id="saveProfileBtn">Save Changes</button>
+        <p id="saveProfileStatus" style="margin-top:10px; font-size:15px; font-weight:700; display:none;"></p>
+      </form>
+    </div>
   </div>
+</section>
+
+<section class="tab-panel hidden" id="panelMatch" aria-labelledby="tabBtnMatch" tabindex="-1">
+  <div class="match-panel-grid">
+    <div class="match-panel-col" id="matchMainCol">
+      <!-- #matchStatusGroup, #availabilityCard, #visitCardGroup inserted here (JS) -->
+    </div>
+    <div class="match-panel-col" id="matchSideCol">
+      <!-- #inlineChatCard inserted here (JS), above the call card -->
+      <div class="dg-card" id="callCard">
+        <div class="dg-card-head">
+          <div class="dg-badge dg-badge-rose" id="callBadgeIcon"></div>
+          <h3 class="dg-card-title">Calling</h3>
+        </div>
+        <p class="dg-card-sub">Start a face-to-face video call with your match.</p>
+        <button type="button" class="btn btn-primary" id="startCallBtn">Start Video Call</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tab-panel hidden" id="panelOpportunities" aria-labelledby="tabBtnOpportunities" tabindex="-1">
   <div class="dash-grid-3">
     <div id="opportunitiesCardMount"></div>
     <div id="impactCardMount"></div>
@@ -770,13 +889,11 @@ footer a:hover{color:#fff;}
   </div>
 </section>
 
-<div class="dash-shell">
-  <div class="dash-greeting">
-    <span class="eyebrow">Your CareQuest</span>
-    <h1 id="memberGreeting">Welcome back</h1>
-    <p>Everything about your match, in one place.</p>
-  </div>
-
+<!-- ===================================================
+     SENIOR VIEW — flat sections, unchanged. Shown only for confirmed
+     senior accounts (youths never see this; their copies of these
+     same cards get moved up into the tab panels above instead). -->
+<div class="dash-shell hidden" id="seniorMemberView">
   <section class="dash-section" aria-labelledby="carequestSectionHeading">
     <div class="dash-section-head">
       <h2 id="carequestSectionHeading">Your CareQuest</h2>
@@ -909,6 +1026,16 @@ footer a:hover{color:#fff;}
   </section>
 </div>
 
+<div class="call-overlay hidden" id="callOverlay">
+  <div class="call-stage">
+    <div id="dailyCallContainer" style="position:absolute; inset:0; border-radius:20px; overflow:hidden;"></div>
+  </div>
+  <div class="call-controls">
+    <button class="call-btn end" title="End call" id="endCallBtn">✕</button>
+  </div>
+  <p style="margin-top:18px; font-size:13px; opacity:.55;" id="callStatus">Connecting…</p>
+</div>
+
 <script>
   // ---------------------------------------------------------
   // Availability grid + visit scheduling
@@ -969,7 +1096,8 @@ footer a:hover{color:#fff;}
     people: '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.6"/><path d="M2.5 20c1-3.4 3.4-5.2 6-5.2 1 0 1.9.2 2.7.7"/><path d="M12.5 20c.8-2.8 2.8-4.3 5-4.3 2.5 0 4.6 1.7 5.5 4.3"/></svg>',
     camera: '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9z"/><circle cx="12" cy="13" r="3.4"/></svg>',
     check: '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></svg>',
-    chat: '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7A2.5 2.5 0 0 1 17.5 16H10l-4.5 4v-4h-1A2.5 2.5 0 0 1 4 13.5v-7z"/></svg>'
+    chat: '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7A2.5 2.5 0 0 1 17.5 16H10l-4.5 4v-4h-1A2.5 2.5 0 0 1 4 13.5v-7z"/></svg>',
+    video: '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6.5" width="12" height="11" rx="2"/><path d="M15 10.5l6-3.2v9.4l-6-3.2z"/></svg>'
   };
 
   // Fills in the decorative badge icon for every static (non-component)
@@ -985,6 +1113,8 @@ footer a:hover{color:#fff;}
       upcomingVisitBadgeIcon: 'calendar',
       scheduleBadgeIcon: 'calendar',
       messagesBadgeIcon: 'chat',
+      editProfileBadgeIcon: 'person',
+      callBadgeIcon: 'video',
       interviewStatusIcon: 'clock',
       matchStatusIcon: 'check',
       visitStatusIcon: 'check'
@@ -993,6 +1123,190 @@ footer a:hover{color:#fff;}
       const el = document.getElementById(id);
       if(el) el.innerHTML = DASH_ICONS[iconTargets[id]];
     });
+  }
+
+  // ---------------------------------------------------------
+  // Youth member tabs: Home / Your Match / Opportunities & Impact.
+  //
+  // Only youth accounts get this tabbed layout — seniors keep the flat
+  // #seniorMemberView sections untouched. The shared cards (match
+  // status, availability, schedule, messages) live in the senior
+  // markup by default and are MOVED (not cloned) into the tab panels
+  // below the first time a youth's role is confirmed, so there's still
+  // exactly one #availabilityCard etc. in the document.
+  // ---------------------------------------------------------
+  const TAB_NAMES = ['home', 'match', 'opportunities'];
+
+  function tabPanelId(name){ return 'panel' + name.charAt(0).toUpperCase() + name.slice(1); }
+  function tabBtnId(name){ return 'tabBtn' + name.charAt(0).toUpperCase() + name.slice(1); }
+
+  function switchTab(tabName){
+    TAB_NAMES.forEach(name => {
+      const panel = document.getElementById(tabPanelId(name));
+      const btn = document.getElementById(tabBtnId(name));
+      const isActive = name === tabName;
+      panel.classList.toggle('hidden', !isActive);
+      btn.classList.toggle('active', isActive);
+      if(isActive){
+        btn.setAttribute('aria-current', 'page');
+      } else {
+        btn.removeAttribute('aria-current');
+      }
+    });
+  }
+
+  function wireMemberTabs(){
+    TAB_NAMES.forEach(name => {
+      document.getElementById(tabBtnId(name)).addEventListener('click', () => {
+        switchTab(name);
+        document.getElementById(tabPanelId(name)).focus();
+      });
+    });
+  }
+
+  // Moves the cards shared with the senior layout into their new homes
+  // inside the youth tab panels, reveals the tab nav, and gates the
+  // Your Match / Opportunities & Impact tabs on interview verification
+  // — this is what makes "just signed up" youths see only Home until
+  // CareQuest staff verify their interview.
+  function activateYouthTabs(youthProfile){
+    const panelHome = document.getElementById('panelHome');
+    const homePhotoRow = document.getElementById('homePhotoRow');
+    panelHome.insertBefore(document.getElementById('interviewStatusCard'), homePhotoRow);
+    homePhotoRow.insertBefore(document.getElementById('profilePhotoCard'), document.getElementById('editProfileCard'));
+
+    const matchMainCol = document.getElementById('matchMainCol');
+    matchMainCol.appendChild(document.getElementById('matchStatusGroup'));
+    matchMainCol.appendChild(document.getElementById('availabilityCard'));
+    matchMainCol.appendChild(document.getElementById('visitCardGroup'));
+
+    const matchSideCol = document.getElementById('matchSideCol');
+    matchSideCol.insertBefore(document.getElementById('inlineChatCard'), document.getElementById('callCard'));
+
+    document.getElementById('memberTabs').classList.remove('hidden');
+    switchTab('home');
+
+    const verified = youthProfile.interview_status === 'verified';
+    document.getElementById('tabBtnMatch').classList.toggle('hidden', !verified);
+    document.getElementById('tabBtnOpportunities').classList.toggle('hidden', !verified);
+
+    populateEditProfileForm(youthProfile);
+  }
+
+  // ---------------------------------------------------------
+  // Home tab: edit the details captured at signup (first/last name,
+  // phone, age, interests). Uses the existing "youth can update own
+  // profile" RLS policy already in supabase-schema.sql — no schema
+  // change needed for this.
+  // ---------------------------------------------------------
+  function populateEditProfileForm(youthProfile){
+    document.getElementById('editFirstName').value = youthProfile.first_name || '';
+    document.getElementById('editLastName').value = youthProfile.last_name || '';
+    document.getElementById('editPhone').value = youthProfile.phone || '';
+    document.getElementById('editAge').value = youthProfile.age != null ? youthProfile.age : '';
+    document.getElementById('editInterests').value = youthProfile.interests || '';
+  }
+
+  async function saveProfileDetails(e){
+    e.preventDefault();
+    const btn = document.getElementById('saveProfileBtn');
+    const statusEl = document.getElementById('saveProfileStatus');
+    const prevText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    statusEl.style.display = 'none';
+
+    const ageVal = document.getElementById('editAge').value;
+    const updates = {
+      first_name: document.getElementById('editFirstName').value.trim(),
+      last_name: document.getElementById('editLastName').value.trim() || null,
+      phone: document.getElementById('editPhone').value.trim() || null,
+      age: ageVal ? Number(ageVal) : null,
+      interests: document.getElementById('editInterests').value.trim() || null
+    };
+
+    const { error } = await cq.from('youth_profiles').update(updates).eq('id', currentUserId);
+
+    btn.disabled = false;
+    btn.textContent = prevText;
+
+    if(error){
+      console.error('Could not save profile details:', error);
+      statusEl.textContent = 'Could not save your changes. Please try again.';
+      statusEl.style.color = 'var(--rust)';
+      statusEl.style.display = 'block';
+      return;
+    }
+
+    statusEl.textContent = 'Saved ✓';
+    statusEl.style.color = 'var(--teal-deep)';
+    statusEl.style.display = 'block';
+
+    if(updates.first_name){
+      document.getElementById('memberGreeting').textContent = 'Welcome back, ' + updates.first_name;
+    }
+  }
+
+  // ---------------------------------------------------------
+  // Video calling (Your Match tab). Ported from messages.html, which
+  // remains the source of truth for this flow — same /api/daily-room
+  // endpoint, same Daily.co iframe embed, reusing this page's existing
+  // currentMatchId/cq globals rather than duplicating that state.
+  // ---------------------------------------------------------
+  let dailyCallFrame = null;
+
+  async function startVideoCall(){
+    if(!currentMatchId) return;
+    document.getElementById('callOverlay').classList.remove('hidden');
+    document.getElementById('callStatus').textContent = 'Connecting…';
+
+    try {
+      const { data: { session } } = await cq.auth.getSession();
+      const res = await fetch('/api/daily-room', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + session.access_token
+        },
+        body: JSON.stringify({ matchId: currentMatchId })
+      });
+      const data = await res.json();
+
+      if(!res.ok){
+        document.getElementById('callStatus').textContent = data.error || 'Could not start the video call.';
+        return;
+      }
+      if(typeof data.url !== 'string' || !data.url){
+        document.getElementById('callStatus').textContent = 'Video call service did not return a room URL.';
+        return;
+      }
+
+      // Only pass token if it's actually a string — daily-js throws if a
+      // "token" key is present but not a string (e.g. undefined).
+      const joinConfig = { url: data.url };
+      if(typeof data.token === 'string' && data.token){
+        joinConfig.token = data.token;
+      }
+
+      dailyCallFrame = window.DailyIframe.createFrame(document.getElementById('dailyCallContainer'), {
+        showLeaveButton: false,
+        iframeStyle: { width: '100%', height: '100%', border: '0' }
+      });
+      await dailyCallFrame.join(joinConfig);
+      document.getElementById('callStatus').textContent = 'Connected';
+    } catch (err){
+      console.error('startVideoCall failed:', err);
+      document.getElementById('callStatus').textContent = 'Could not start the video call: ' + (err && err.message ? err.message : String(err));
+    }
+  }
+
+  function endVideoCall(){
+    if(dailyCallFrame){
+      dailyCallFrame.leave();
+      dailyCallFrame.destroy();
+      dailyCallFrame = null;
+    }
+    document.getElementById('callOverlay').classList.add('hidden');
   }
 
   function escapeHtml(str){
@@ -1138,14 +1452,15 @@ footer a:hover{color:#fff;}
     { icon: 'help', title: 'Help Center', description: 'Get support and FAQs', href: '#' }
   ];
 
-  // Youth-only: mounts the three components with today's data and
-  // reveals the section. Called from loadMember() once the signed-in
-  // user's role is known to be 'youth' — never for seniors.
+  // Youth-only: mounts the three components with today's data. Visibility
+  // of the panel they live in (#panelOpportunities) is handled by the
+  // tab system (see activateYouthTabs/switchTab), not here. Called from
+  // loadMember() once the signed-in user's role is known to be 'youth'
+  // — never for seniors.
   function renderYouthDashboardSection(){
     mountComponent('opportunitiesCardMount', OpportunitiesCard, { opportunities: MOCK_OPPORTUNITIES, viewAllHref: '#' });
     mountComponent('impactCardMount', ImpactCard, { stats: MOCK_IMPACT.stats, note: MOCK_IMPACT.note, viewAllHref: '#' });
     mountComponent('quickLinksCardMount', QuickLinksCard, { links: MOCK_QUICK_LINKS, exploreHref: '#' });
-    document.getElementById('youthDashSection').classList.remove('hidden');
   }
 
   function blockKey(day, start, end){ return day + '|' + start + '|' + end; }
@@ -1649,6 +1964,10 @@ footer a:hover{color:#fff;}
     document.getElementById('avatarFileInput').click();
   });
   document.getElementById('avatarFileInput').addEventListener('change', handleAvatarUpload);
+  wireMemberTabs();
+  document.getElementById('editProfileForm').addEventListener('submit', saveProfileDetails);
+  document.getElementById('startCallBtn').addEventListener('click', startVideoCall);
+  document.getElementById('endCallBtn').addEventListener('click', endVideoCall);
 
   // Supabase can take a moment to restore a persisted session from
   // localStorage right after a fresh page load. A bare getSession()
@@ -1719,7 +2038,7 @@ footer a:hover{color:#fff;}
       // point the matches query at the wrong column, and show
       // "No Match Yet" even when a match genuinely exists.
       const [{ data: youthProfile, error: youthProfileErr }, { data: seniorProfile, error: seniorProfileErr }] = await Promise.all([
-        cq.from('youth_profiles').select('first_name, interview_status, avatar_url').eq('id', session.user.id).maybeSingle(),
+        cq.from('youth_profiles').select('first_name, last_name, phone, age, interests, interview_status, avatar_url').eq('id', session.user.id).maybeSingle(),
         cq.from('senior_profiles').select('full_name, avatar_url').eq('id', session.user.id).maybeSingle()
       ]);
 
@@ -1736,10 +2055,12 @@ footer a:hover{color:#fff;}
           document.getElementById('interviewStatusCard').classList.remove('hidden');
         }
         renderYouthDashboardSection();
+        activateYouthTabs(youthProfile);
       } else if(seniorProfile){
         role = 'senior';
         displayFirstName = seniorProfile.full_name.split(' ')[0];
         myAvatarUrl = seniorProfile.avatar_url;
+        document.getElementById('seniorMemberView').classList.remove('hidden');
       } else {
         // A genuinely signed-in user with no profile row at all is a
         // real account problem, not "you're not logged in" — redirecting
