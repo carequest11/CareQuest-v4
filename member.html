@@ -765,14 +765,17 @@ footer a:hover{color:#fff;}
 
 #homePhotoRow{margin-top:24px;}
 
-/* ---- Your Match tab: a compact two-column layout that tries to fit
-   in one screen (left: match/availability/schedule, right: messages +
-   calling) instead of a long single-column scroll. On short viewports
-   the panel itself gets a scrollbar as a fallback — individual cards
-   keep their natural, readable size (touch targets stay full-size)
-   rather than being squeezed to force a fit. ---- */
+/* ---- Your Match tab: who you're matched with and your availability
+   run full width (availability in particular needs the room — six
+   time-block columns don't fit readably in a half-width column without
+   forcing horizontal scroll), then a compact two-column row below pairs
+   Schedule a Visit with Messages + Calling. On short viewports the
+   panel itself gets a scrollbar as a fallback — individual cards keep
+   their natural, readable size (touch targets stay full-size) rather
+   than being squeezed to force a fit. ---- */
+#panelMatch > * + *{margin-top:24px;}
 .match-panel-grid{
-  display:grid; grid-template-columns:1.5fr 1fr; gap:20px; align-items:start;
+  display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;
 }
 .match-panel-col{display:flex; flex-direction:column; gap:16px; min-width:0;}
 .match-panel-col .dg-card{padding:20px 22px;}
@@ -863,13 +866,24 @@ footer a:hover{color:#fff;}
 </section>
 
 <section class="tab-panel hidden" id="panelMatch" aria-labelledby="tabBtnMatch" tabindex="-1">
-  <div class="match-panel-grid">
+  <!-- #matchStatusGroup inserted here (JS), full width -->
+  <!-- #availabilityCard inserted here (JS), full width — needs the whole
+       panel's width so all 6 time-block columns fit without horizontal
+       scrolling; it doesn't fit readably in the narrower left column below -->
+  <div class="match-panel-grid" id="matchPanelGrid">
     <div class="match-panel-col" id="matchMainCol">
-      <!-- #matchStatusGroup, #availabilityCard, #visitCardGroup inserted here (JS) -->
+      <!-- #visitCardGroup inserted here (JS) -->
     </div>
     <div class="match-panel-col" id="matchSideCol">
+      <div class="dg-card hidden" id="matchSideEmptyState">
+        <div class="dg-card-head">
+          <div class="dg-badge dg-badge-purple" id="matchSideEmptyBadgeIcon"></div>
+          <h3 class="dg-card-title">Messages &amp; Calling</h3>
+        </div>
+        <p class="dg-card-sub">You'll be able to message and video call once you're matched with a senior.</p>
+      </div>
       <!-- #inlineChatCard inserted here (JS), above the call card -->
-      <div class="dg-card" id="callCard">
+      <div class="dg-card hidden" id="callCard">
         <div class="dg-card-head">
           <div class="dg-badge dg-badge-rose" id="callBadgeIcon"></div>
           <h3 class="dg-card-title">Calling</h3>
@@ -1115,6 +1129,7 @@ footer a:hover{color:#fff;}
       messagesBadgeIcon: 'chat',
       editProfileBadgeIcon: 'person',
       callBadgeIcon: 'video',
+      matchSideEmptyBadgeIcon: 'chat',
       interviewStatusIcon: 'clock',
       matchStatusIcon: 'check',
       visitStatusIcon: 'check'
@@ -1175,9 +1190,12 @@ footer a:hover{color:#fff;}
     panelHome.insertBefore(document.getElementById('interviewStatusCard'), homePhotoRow);
     homePhotoRow.insertBefore(document.getElementById('profilePhotoCard'), document.getElementById('editProfileCard'));
 
+    const panelMatch = document.getElementById('panelMatch');
+    const matchPanelGrid = document.getElementById('matchPanelGrid');
+    panelMatch.insertBefore(document.getElementById('matchStatusGroup'), matchPanelGrid);
+    panelMatch.insertBefore(document.getElementById('availabilityCard'), matchPanelGrid);
+
     const matchMainCol = document.getElementById('matchMainCol');
-    matchMainCol.appendChild(document.getElementById('matchStatusGroup'));
-    matchMainCol.appendChild(document.getElementById('availabilityCard'));
     matchMainCol.appendChild(document.getElementById('visitCardGroup'));
 
     const matchSideCol = document.getElementById('matchSideCol');
@@ -2098,6 +2116,11 @@ footer a:hover{color:#fff;}
 
       if(!match){
         document.getElementById('noMatchCard').classList.remove('hidden');
+        // Youth tab only — harmless no-op for seniors since #panelMatch
+        // stays hidden for that role regardless. Messages and Calling
+        // both require an active match, so show why rather than let
+        // Messages silently vanish and Calling silently do nothing.
+        document.getElementById('matchSideEmptyState').classList.remove('hidden');
         return;
       }
 
@@ -2106,6 +2129,7 @@ footer a:hover{color:#fff;}
 
       document.getElementById('matchInfoCard').classList.remove('hidden');
       document.getElementById('inlineChatCard').classList.remove('hidden');
+      document.getElementById('callCard').classList.remove('hidden');
 
       const { data: partner } = await cq.rpc('get_match_partner', { p_match_id: match.id });
       if(partner && partner[0]){
