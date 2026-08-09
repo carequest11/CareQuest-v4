@@ -693,7 +693,7 @@ footer a:hover{color:#fff;}
 
     document.querySelector('.dash-greeting h1').textContent = 'Welcome, ' + profile.first_name;
 
-    if(profile.interview_status === 'verified'){
+    if(profile.interview_status === 'approved'){
       document.getElementById('interviewBadge').textContent = '✓ Interview Verified';
       document.getElementById('interviewBadge').className = 'status-badge verified';
       document.getElementById('availLockedCard').classList.add('hidden');
