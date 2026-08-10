@@ -807,32 +807,24 @@ footer a:hover{color:#fff;}
 #homePhotoRow{margin-top:0; align-items:start;}
 #homePhotoRow > *{height:auto;}
 
-/* ---- Your Match tab: a single uniform 2-column grid so every
-   subsection is the same width, with no leftover empty space next to
-   Availability. #panelMatch's three real DOM children
-   (#matchStatusGroup, #availabilityCard, #matchPanelGrid — always in
-   that order, per activateYouthTabs()/loadMember() in the script
-   below) become direct grid items via display:contents on
-   #matchPanelGrid, which "unwraps" it without moving anything in the
-   DOM — the JS's insertBefore/appendChild calls, which depend on
-   #matchMainCol/#matchSideCol being where they are, are untouched.
-   `order` then arranges them visually as:
-     Your Match          | Schedule a Visit
-     Your Weekly Avail.  | Messages + Calling ---- */
+/* ---- Your Match tab: two independent columns — left (Your Match,
+   Your Weekly Availability), right (Schedule a Visit, Messages,
+   Calling) — each a flex column using the SAME gap as the grid between
+   them, so every card-to-card space on this tab, horizontal or
+   vertical, is the one value below.
+   A previous version of this laid all 5 cards into a single 2x2 CSS
+   Grid (order-based, spanning shared rows). That made spacing look
+   inconsistent: a shared grid row is sized to its TALLEST cell, so
+   when one column's card was shorter than its row-mate, empty space
+   opened up inside that row before the next one started — an artifact
+   of the grid mechanism, not an actual differing gap value. Two
+   independent flex columns can't have that problem: each one just
+   stacks its own cards with `gap`, full stop, regardless of what's in
+   the other column or how tall it ends up. ---- */
 #panelMatch{
   display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start;
 }
-#panelMatch > *{min-width:0;}
-#panelMatch #matchStatusGroup{order:1;}
-#panelMatch #matchPanelGrid{display:contents;}
-#panelMatch #matchMainCol{order:2;}
-#panelMatch #availabilityCard{order:3;}
-#panelMatch #matchSideCol{order:4;}
-.match-panel-col{display:flex; flex-direction:column; min-width:0;}
-/* Matches #panelMatch's own grid `gap:10px` above, so the space between
-   Messages and Calling (stacked inside this column) reads the same as
-   the space between every other section. */
-.match-panel-col > * + *{margin-top:10px;}
+.match-panel-col{display:flex; flex-direction:column; gap:10px; min-width:0;}
 #panelMatch .inline-chat-box{min-height:110px; max-height:150px;}
 #panelMatch .avail-grid-wrap{margin-top:6px;}
 #panelMatch .avail-grid-v2{border-spacing:2px;}
@@ -844,15 +836,10 @@ footer a:hover{color:#fff;}
   #panelMatch{max-height:calc(100vh - 170px); overflow-y:auto;}
 }
 @media (max-width:900px){
-  /* Single column: restore the natural top-to-bottom reading order
-     (Your Match, Availability, Schedule a Visit, Messages + Calling)
-     rather than the 2x2 desktop order (Schedule a Visit would
-     otherwise land above Availability). */
+  /* Single column: DOM order is already the natural top-to-bottom
+     reading order (Your Match, Availability, then Schedule a Visit,
+     Messages, Calling) — no per-card reordering needed. */
   #panelMatch{grid-template-columns:1fr;}
-  #panelMatch #matchStatusGroup{order:1;}
-  #panelMatch #availabilityCard{order:2;}
-  #panelMatch #matchMainCol{order:3;}
-  #panelMatch #matchSideCol{order:4;}
 }
 
 </style>
@@ -934,32 +921,26 @@ footer a:hover{color:#fff;}
 </section>
 
 <section class="tab-panel hidden" id="panelMatch" aria-labelledby="tabBtnMatch" tabindex="-1">
-  <!-- #matchStatusGroup inserted here (JS) -->
-  <!-- #availabilityCard inserted here (JS) — sits in its own grid cell
-       alongside Your Match/Schedule a Visit/Messages+Calling below; see
-       the CSS comment above #panelMatch for how the visual 2x2 order is
-       arranged without moving anything in the DOM. -->
-  <div class="match-panel-grid" id="matchPanelGrid">
-    <div class="match-panel-col" id="matchMainCol">
-      <!-- #visitCardGroup inserted here (JS) -->
+  <div class="match-panel-col" id="matchMainCol">
+    <!-- #matchStatusGroup, #availabilityCard inserted here (JS) -->
+  </div>
+  <div class="match-panel-col" id="matchSideCol">
+    <!-- #visitCardGroup inserted here (JS), first -->
+    <div class="dg-card hidden" id="matchSideEmptyState">
+      <div class="dg-card-head">
+        <div class="dg-badge dg-badge-purple" id="matchSideEmptyBadgeIcon"></div>
+        <h3 class="dg-card-title">Messages &amp; Calling</h3>
+      </div>
+      <p class="dg-card-sub">You'll be able to message and video call once you're matched with a senior.</p>
     </div>
-    <div class="match-panel-col" id="matchSideCol">
-      <div class="dg-card hidden" id="matchSideEmptyState">
-        <div class="dg-card-head">
-          <div class="dg-badge dg-badge-purple" id="matchSideEmptyBadgeIcon"></div>
-          <h3 class="dg-card-title">Messages &amp; Calling</h3>
-        </div>
-        <p class="dg-card-sub">You'll be able to message and video call once you're matched with a senior.</p>
+    <!-- #inlineChatCard inserted here (JS), above the call card -->
+    <div class="dg-card hidden" id="callCard">
+      <div class="dg-card-head">
+        <div class="dg-badge dg-badge-rose" id="callBadgeIcon"></div>
+        <h3 class="dg-card-title">Calling</h3>
       </div>
-      <!-- #inlineChatCard inserted here (JS), above the call card -->
-      <div class="dg-card hidden" id="callCard">
-        <div class="dg-card-head">
-          <div class="dg-badge dg-badge-rose" id="callBadgeIcon"></div>
-          <h3 class="dg-card-title">Calling</h3>
-        </div>
-        <p class="dg-card-sub">Start a face-to-face video call with your match.</p>
-        <button type="button" class="btn btn-primary" id="startCallBtn">Start Video Call</button>
-      </div>
+      <p class="dg-card-sub">Start a face-to-face video call with your match.</p>
+      <button type="button" class="btn btn-primary" id="startCallBtn">Start Video Call</button>
     </div>
   </div>
 </section>
@@ -1259,15 +1240,14 @@ footer a:hover{color:#fff;}
     panelHome.insertBefore(document.getElementById('interviewStatusCard'), homePhotoRow);
     homePhotoRow.insertBefore(document.getElementById('profilePhotoCard'), document.getElementById('editProfileCard'));
 
-    const panelMatch = document.getElementById('panelMatch');
-    const matchPanelGrid = document.getElementById('matchPanelGrid');
-    panelMatch.insertBefore(document.getElementById('matchStatusGroup'), matchPanelGrid);
-    panelMatch.insertBefore(document.getElementById('availabilityCard'), matchPanelGrid);
-
+    // Your Match tab: left column = Your Match + Your Weekly
+    // Availability, right column = Schedule a Visit + Messages + Calling.
     const matchMainCol = document.getElementById('matchMainCol');
-    matchMainCol.appendChild(document.getElementById('visitCardGroup'));
+    matchMainCol.appendChild(document.getElementById('matchStatusGroup'));
+    matchMainCol.appendChild(document.getElementById('availabilityCard'));
 
     const matchSideCol = document.getElementById('matchSideCol');
+    matchSideCol.insertBefore(document.getElementById('visitCardGroup'), document.getElementById('matchSideEmptyState'));
     matchSideCol.insertBefore(document.getElementById('inlineChatCard'), document.getElementById('callCard'));
 
     document.getElementById('memberTabs').classList.remove('hidden');
