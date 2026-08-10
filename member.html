@@ -825,6 +825,15 @@ footer a:hover{color:#fff;}
   display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start;
 }
 .match-panel-col{display:flex; flex-direction:column; gap:10px; min-width:0;}
+/* #availabilityCard and #inlineChatCard also do duty as the senior
+   view's full-width cards, where .dg-card-full's own margin-bottom is
+   the intended spacing. In here their spacing comes entirely from
+   .match-panel-col's `gap` above, so that leftover margin needs to be
+   neutralized — otherwise it stacks on top of the gap for whichever of
+   the two isn't its column's last child (Messages, not Availability),
+   which is exactly what made the gap after Messages look bigger than
+   every other gap on this tab. */
+#panelMatch .dg-card-full{margin-bottom:0;}
 #panelMatch .inline-chat-box{min-height:110px; max-height:150px;}
 #panelMatch .avail-grid-wrap{margin-top:6px;}
 #panelMatch .avail-grid-v2{border-spacing:2px;}
