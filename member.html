@@ -851,9 +851,15 @@ footer a:hover{color:#fff;}
 #panelMatch .inline-chat-box{min-height:110px; max-height:150px;}
 #panelMatch .avail-grid-wrap{margin-top:6px;}
 #panelMatch .avail-grid-v2{border-spacing:2px;}
-#panelMatch .avail-grid-v2 th{padding:2px 3px; font-size:12px;}
-#panelMatch .avail-grid-v2 thead th:first-child{width:70px;}
-#panelMatch .avail-grid-v2 th.avail-daylabel{font-size:13px; padding-right:6px;}
+/* At this compact size, a nowrap header like "11am–12pm" can be wider
+   than its fixed column and spill into the next one — letting time
+   headers wrap to two lines is what actually guarantees no overlap,
+   rather than trying to guess an exact width that always fits. The
+   day-label column (single word, no good break point) instead gets a
+   safety-margin width and stays nowrap. */
+#panelMatch .avail-grid-v2 th{padding:2px 3px; font-size:12px; white-space:normal; line-height:1.2;}
+#panelMatch .avail-grid-v2 thead th:first-child{width:85px; white-space:nowrap;}
+#panelMatch .avail-grid-v2 th.avail-daylabel{font-size:13px; padding-right:6px; white-space:nowrap;}
 #panelMatch .avail-block-btn{min-height:30px; font-size:12px; border-radius:6px;}
 #panelMatch .avail-summary{margin-top:6px; font-size:13px;}
 @media (min-width:1024px){
