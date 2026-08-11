@@ -642,6 +642,10 @@ footer a:hover{color:#fff;}
       <textarea id="interests" rows="3" placeholder="Tell us what you enjoy — e.g. gardening, music, board games, storytelling…" required></textarea>
     </div>
     <div class="field">
+      <label for="languages">Language(s) <span class="field-hint">(optional)</span></label>
+      <input id="languages" type="text" placeholder="e.g. English, Mandarin">
+    </div>
+    <div class="field">
       <label for="password">Password</label>
       <input id="password" type="password" placeholder="At least 8 characters" required>
     </div>
@@ -668,6 +672,7 @@ footer a:hover{color:#fff;}
     const ageVal = document.getElementById('age').value;
     const age = ageVal ? parseInt(ageVal, 10) : null;
     const interests = document.getElementById('interests').value.trim();
+    const languages = document.getElementById('languages').value.trim();
     const password = document.getElementById('password').value;
 
     if(!first_name || !email || !password){
@@ -695,7 +700,7 @@ footer a:hover{color:#fff;}
       body: JSON.stringify({
         role: 'youth',
         userId: data.user.id,
-        profile: { first_name, last_name, email, phone, age, interests }
+        profile: { first_name, last_name, email, phone, age, interests, languages }
       })
     });
 

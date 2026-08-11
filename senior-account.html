@@ -633,6 +633,10 @@ footer a:hover{color:#fff;}
       <textarea id="s-interests" rows="3" placeholder="Tell us what you enjoy — e.g. gardening, music, board games, storytelling…" required></textarea>
     </div>
     <div class="field">
+      <label for="s-languages">Language(s) <span class="field-hint">(optional)</span></label>
+      <input id="s-languages" type="text" placeholder="e.g. English, Cantonese">
+    </div>
+    <div class="field">
       <label for="s-password">Password</label>
       <input id="s-password" type="password" placeholder="At least 8 characters" required>
     </div>
@@ -657,6 +661,7 @@ footer a:hover{color:#fff;}
     const phone = document.getElementById('s-phone').value.trim();
     const past_career = document.getElementById('s-career').value.trim();
     const interests = document.getElementById('s-interests').value.trim();
+    const languages = document.getElementById('s-languages').value.trim();
     const password = document.getElementById('s-password').value;
 
     if(!full_name || !email || !password){
@@ -684,7 +689,7 @@ footer a:hover{color:#fff;}
       body: JSON.stringify({
         role: 'senior',
         userId: data.user.id,
-        profile: { full_name, email, phone, past_career, interests }
+        profile: { full_name, email, phone, past_career, interests, languages }
       })
     });
 

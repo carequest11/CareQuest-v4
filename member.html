@@ -602,7 +602,13 @@ footer a:hover{color:#fff;}
   white-space:nowrap; padding-right:14px; text-align:right;
 }
 .avail-block-btn{
-  width:100%; min-width:74px; min-height:52px; border-radius:10px;
+  /* min-width was 74px when there were 6 two-hour blocks; halved to
+     fit 12 one-hour blocks in the same table width without forcing
+     horizontal scroll — still comfortably above a 44px touch target
+     (min-height alone already clears that). No visible text sits
+     inside these cells (the time label is the column header), so a
+     narrower cell doesn't risk clipping anything. */
+  width:100%; min-width:48px; min-height:52px; border-radius:10px;
   border:2px solid var(--line); background:var(--paper-deep); color:var(--ink);
   font-size:15px; font-weight:600; cursor:pointer;
   transition:background .15s ease, border-color .15s ease, color .15s ease;
@@ -984,6 +990,10 @@ footer a:hover{color:#fff;}
           <label>Hobbies &amp; Interests <span class="field-hint">(used to match you with a senior)</span></label>
           <textarea id="editInterests" rows="3"></textarea>
         </div>
+        <div class="field">
+          <label for="editLanguages">Language(s) <span class="field-hint">(optional)</span></label>
+          <input type="text" id="editLanguages" placeholder="e.g. English, Mandarin">
+        </div>
         <button type="submit" class="btn btn-primary" id="saveProfileBtn">Save Changes</button>
         <p id="saveProfileStatus" style="margin-top:10px; font-size:15px; font-weight:700; display:none;"></p>
       </form>
@@ -1118,6 +1128,42 @@ footer a:hover{color:#fff;}
         </div>
       </div>
     </div>
+
+    <div class="dash-grid-2">
+      <div class="dg-card" id="seniorDetailsCard">
+        <div class="dg-card-head">
+          <div class="dg-badge dg-badge-mint" id="seniorDetailsBadgeIcon"></div>
+          <h3 class="dg-card-title">Your Details</h3>
+        </div>
+        <p class="dg-card-sub">Keep this up to date — it's what we used to help find your match.</p>
+        <form id="seniorDetailsForm">
+          <div class="field-row">
+            <div class="field">
+              <label for="seniorEditName">Your name</label>
+              <input type="text" id="seniorEditName" required>
+            </div>
+            <div class="field">
+              <label for="seniorEditPhone">Phone</label>
+              <input type="tel" id="seniorEditPhone">
+            </div>
+          </div>
+          <div class="field">
+            <label for="seniorEditCareer">Past career</label>
+            <input type="text" id="seniorEditCareer">
+          </div>
+          <div class="field">
+            <label>Hobbies &amp; Interests <span class="field-hint">(used to match you with a volunteer)</span></label>
+            <textarea id="seniorEditInterests" rows="3"></textarea>
+          </div>
+          <div class="field">
+            <label for="seniorEditLanguages">Language(s) <span class="field-hint">(optional)</span></label>
+            <input type="text" id="seniorEditLanguages" placeholder="e.g. English, Cantonese">
+          </div>
+          <button type="submit" class="btn btn-primary" id="seniorSaveDetailsBtn">Save Changes</button>
+          <p id="seniorSaveDetailsStatus" style="margin-top:10px; font-size:15px; font-weight:700; display:none;"></p>
+        </form>
+      </div>
+    </div>
   </section>
 
   <section class="dash-section" aria-labelledby="detailsSectionHeading">
@@ -1220,13 +1266,23 @@ footer a:hover{color:#fff;}
   // ---------------------------------------------------------
   const TIME_ZONE = 'America/Vancouver';
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  // 1-hour increments (was 2-hour). A booked visit is still
+  // VISIT_DURATION_MINUTES long — generateUpcomingSlots() below finds
+  // pairs of back-to-back available blocks to offer as one 2-hour
+  // visit slot, rather than a visit now being only 1 hour.
   const TIME_BLOCKS = [
-    { start: '08:00:00', end: '10:00:00', label: '8–10am' },
-    { start: '10:00:00', end: '12:00:00', label: '10am–12pm' },
-    { start: '12:00:00', end: '14:00:00', label: '12–2pm' },
-    { start: '14:00:00', end: '16:00:00', label: '2–4pm' },
-    { start: '16:00:00', end: '18:00:00', label: '4–6pm' },
-    { start: '18:00:00', end: '20:00:00', label: '6–8pm' }
+    { start: '08:00:00', end: '09:00:00', label: '8–9am' },
+    { start: '09:00:00', end: '10:00:00', label: '9–10am' },
+    { start: '10:00:00', end: '11:00:00', label: '10–11am' },
+    { start: '11:00:00', end: '12:00:00', label: '11am–12pm' },
+    { start: '12:00:00', end: '13:00:00', label: '12–1pm' },
+    { start: '13:00:00', end: '14:00:00', label: '1–2pm' },
+    { start: '14:00:00', end: '15:00:00', label: '2–3pm' },
+    { start: '15:00:00', end: '16:00:00', label: '3–4pm' },
+    { start: '16:00:00', end: '17:00:00', label: '4–5pm' },
+    { start: '17:00:00', end: '18:00:00', label: '5–6pm' },
+    { start: '18:00:00', end: '19:00:00', label: '6–7pm' },
+    { start: '19:00:00', end: '20:00:00', label: '7–8pm' }
   ];
   const VISIT_DURATION_MINUTES = 120;
   const WEEKS_AHEAD = 4;
@@ -1289,6 +1345,7 @@ footer a:hover{color:#fff;}
       scheduleBadgeIcon: 'calendar',
       messagesBadgeIcon: 'chat',
       editProfileBadgeIcon: 'person',
+      seniorDetailsBadgeIcon: 'person',
       callBadgeIcon: 'video',
       matchSideEmptyBadgeIcon: 'chat',
       interviewStatusIcon: 'clock',
@@ -1383,6 +1440,7 @@ footer a:hover{color:#fff;}
     document.getElementById('editPhone').value = youthProfile.phone || '';
     document.getElementById('editAge').value = youthProfile.age != null ? youthProfile.age : '';
     document.getElementById('editInterests').value = youthProfile.interests || '';
+    document.getElementById('editLanguages').value = youthProfile.languages || '';
   }
 
   async function saveProfileDetails(e){
@@ -1400,7 +1458,8 @@ footer a:hover{color:#fff;}
       last_name: document.getElementById('editLastName').value.trim() || null,
       phone: document.getElementById('editPhone').value.trim() || null,
       age: ageVal ? Number(ageVal) : null,
-      interests: document.getElementById('editInterests').value.trim() || null
+      interests: document.getElementById('editInterests').value.trim() || null,
+      languages: document.getElementById('editLanguages').value.trim() || null
     };
 
     const { error } = await cq.from('youth_profiles').update(updates).eq('id', currentUserId);
@@ -1422,6 +1481,59 @@ footer a:hover{color:#fff;}
 
     if(updates.first_name){
       document.getElementById('memberGreeting').textContent = 'Welcome back, ' + updates.first_name;
+    }
+  }
+
+  // ---------------------------------------------------------
+  // Senior flat view: Your Details card — same idea and RLS pattern
+  // (senior_profiles has its own "senior can update own profile"
+  // policy, mirroring youth_profiles') as the youth Home tab's Your
+  // Details form above, just with senior_profiles' fields.
+  // ---------------------------------------------------------
+  function populateSeniorDetailsForm(seniorProfile){
+    document.getElementById('seniorEditName').value = seniorProfile.full_name || '';
+    document.getElementById('seniorEditPhone').value = seniorProfile.phone || '';
+    document.getElementById('seniorEditCareer').value = seniorProfile.past_career || '';
+    document.getElementById('seniorEditInterests').value = seniorProfile.interests || '';
+    document.getElementById('seniorEditLanguages').value = seniorProfile.languages || '';
+  }
+
+  async function saveSeniorDetails(e){
+    e.preventDefault();
+    const btn = document.getElementById('seniorSaveDetailsBtn');
+    const statusEl = document.getElementById('seniorSaveDetailsStatus');
+    const prevText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    statusEl.style.display = 'none';
+
+    const updates = {
+      full_name: document.getElementById('seniorEditName').value.trim(),
+      phone: document.getElementById('seniorEditPhone').value.trim() || null,
+      past_career: document.getElementById('seniorEditCareer').value.trim() || null,
+      interests: document.getElementById('seniorEditInterests').value.trim() || null,
+      languages: document.getElementById('seniorEditLanguages').value.trim() || null
+    };
+
+    const { error } = await cq.from('senior_profiles').update(updates).eq('id', currentUserId);
+
+    btn.disabled = false;
+    btn.textContent = prevText;
+
+    if(error){
+      console.error('Could not save senior profile details:', error);
+      statusEl.textContent = 'Could not save your changes. Please try again.';
+      statusEl.style.color = 'var(--rust)';
+      statusEl.style.display = 'block';
+      return;
+    }
+
+    statusEl.textContent = 'Saved ✓';
+    statusEl.style.color = 'var(--teal-deep)';
+    statusEl.style.display = 'block';
+
+    if(updates.full_name){
+      document.getElementById('memberGreeting').textContent = 'Welcome back, ' + updates.full_name.split(' ')[0];
     }
   }
 
@@ -2014,8 +2126,9 @@ footer a:hover{color:#fff;}
       });
     });
 
-    // Simplest correct approach given at most 42 rows per user: replace
-    // this user's whole availability rather than diffing old vs new.
+    // Simplest correct approach given at most 84 rows per user (7 days
+    // x 12 one-hour blocks): replace this user's whole availability
+    // rather than diffing old vs new.
     const { error: delErr } = await cq.from('availability').delete().eq('user_id', currentUserId);
     if(delErr){
       alert('Could not save your availability. Please try again.');
@@ -2047,6 +2160,14 @@ footer a:hover{color:#fff;}
     return theirRows.filter(r => mineKeys.has(blockKey(r.day_of_week, r.start_time, r.end_time)));
   }
 
+  // TIME_BLOCKS are 1 hour each, but a visit is VISIT_DURATION_MINUTES
+  // (2 hours) long. For every overlapping block, tries to walk forward
+  // through back-to-back overlapping blocks (block N's end === block
+  // N+1's start, no gaps) until their combined span reaches a full
+  // visit's length, offering that block's start time as a bookable
+  // slot if so. Doing this from every overlapping block (not just
+  // every other one) means a long mutual-availability window offers
+  // several overlapping start-time options, not just fixed slices of it.
   function generateUpcomingSlots(overlapBlocks, existingVisits){
     const { DateTime } = luxon;
     const nowVan = DateTime.now().setZone(TIME_ZONE);
@@ -2056,17 +2177,31 @@ footer a:hover{color:#fff;}
       const date = nowVan.plus({ days: dayOffset }).startOf('day');
       const dow = date.weekday % 7; // Luxon: 1=Mon..7=Sun -> 0=Sun..6=Sat
 
-      overlapBlocks.filter(b => b.day_of_week === dow).forEach(block => {
-        const [sh, sm] = block.start_time.split(':').map(Number);
-        const [eh, em] = block.end_time.split(':').map(Number);
+      const dayBlocks = overlapBlocks
+        .filter(b => b.day_of_week === dow)
+        .slice()
+        .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+      dayBlocks.forEach((startBlock, i) => {
+        const [sh, sm] = startBlock.start_time.split(':').map(Number);
         const slotStart = date.set({ hour: sh, minute: sm, second: 0, millisecond: 0 });
-        const slotEnd = date.set({ hour: eh, minute: em, second: 0, millisecond: 0 });
+        const slotEnd = slotStart.plus({ minutes: VISIT_DURATION_MINUTES });
 
         if(slotStart <= nowVan) return; // skip anything already past
 
+        let coveredUntil = startBlock.end_time;
+        let j = i;
+        while(coveredUntil < slotEnd.toFormat('HH:mm:ss')){
+          j++;
+          const nextBlock = dayBlocks[j];
+          if(!nextBlock || nextBlock.start_time !== coveredUntil) return; // gap — no full-length run from here
+          coveredUntil = nextBlock.end_time;
+        }
+
         const alreadyBooked = existingVisits.some(v => {
           const vStart = DateTime.fromISO(v.scheduled_at, { zone: 'utc' }).setZone(TIME_ZONE);
-          return vStart >= slotStart && vStart < slotEnd;
+          const vEnd = vStart.plus({ minutes: VISIT_DURATION_MINUTES });
+          return vStart < slotEnd && vEnd > slotStart;
         });
         if(alreadyBooked) return;
 
@@ -2410,6 +2545,7 @@ footer a:hover{color:#fff;}
   document.getElementById('avatarFileInput').addEventListener('change', handleAvatarUpload);
   wireMemberTabs();
   document.getElementById('editProfileForm').addEventListener('submit', saveProfileDetails);
+  document.getElementById('seniorDetailsForm').addEventListener('submit', saveSeniorDetails);
   document.getElementById('startCallBtn').addEventListener('click', startVideoCall);
   document.getElementById('endCallBtn').addEventListener('click', endVideoCall);
   document.getElementById('logHoursForm').addEventListener('submit', handleLogHoursSubmit);
@@ -2488,8 +2624,8 @@ footer a:hover{color:#fff;}
       // point the matches query at the wrong column, and show
       // "No Match Yet" even when a match genuinely exists.
       const [{ data: youthProfile, error: youthProfileErr }, { data: seniorProfile, error: seniorProfileErr }] = await Promise.all([
-        cq.from('youth_profiles').select('first_name, last_name, phone, age, interests, interview_status, avatar_url').eq('id', session.user.id).maybeSingle(),
-        cq.from('senior_profiles').select('full_name, avatar_url').eq('id', session.user.id).maybeSingle()
+        cq.from('youth_profiles').select('first_name, last_name, phone, age, interests, languages, interview_status, avatar_url').eq('id', session.user.id).maybeSingle(),
+        cq.from('senior_profiles').select('full_name, phone, past_career, interests, languages, avatar_url').eq('id', session.user.id).maybeSingle()
       ]);
 
       if(youthProfileErr) console.error('youth_profiles lookup failed:', youthProfileErr);
@@ -2511,6 +2647,7 @@ footer a:hover{color:#fff;}
         displayFirstName = seniorProfile.full_name.split(' ')[0];
         myAvatarUrl = seniorProfile.avatar_url;
         document.getElementById('seniorMemberView').classList.remove('hidden');
+        populateSeniorDetailsForm(seniorProfile);
       } else {
         // A genuinely signed-in user with no profile row at all is a
         // real account problem, not "you're not logged in" — redirecting

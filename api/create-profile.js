@@ -11,8 +11,8 @@ const supabaseAdmin = createClient(
 );
 
 const ALLOWED_FIELDS = {
-  youth: ['first_name', 'last_name', 'email', 'phone', 'age', 'interests'],
-  senior: ['full_name', 'email', 'phone', 'past_career', 'interests']
+  youth: ['first_name', 'last_name', 'email', 'phone', 'age', 'interests', 'languages'],
+  senior: ['full_name', 'email', 'phone', 'past_career', 'interests', 'languages']
 };
 
 module.exports = async (req, res) => {

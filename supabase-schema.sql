@@ -526,3 +526,15 @@ drop policy if exists "youth can delete own impact hours" on public.impact_hours
 create policy "youth can delete own impact hours"
   on public.impact_hours for delete
   using (auth.uid() = youth_id);
+
+-- =========================================================
+-- Languages: free-text "Language(s)" field, both roles — captured at
+-- signup (youth-account.html / senior-account.html) and editable
+-- afterward from member.html's Your Details card. Same free-text
+-- style as `interests`, not a controlled list.
+--
+-- Run just this section if everything above is already applied.
+-- =========================================================
+
+alter table public.youth_profiles add column if not exists languages text;
+alter table public.senior_profiles add column if not exists languages text;
