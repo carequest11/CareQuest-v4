@@ -874,6 +874,31 @@ footer a:hover{color:#fff;}
   #panelMatch{grid-template-columns:1fr;}
 }
 
+/* #seniorMemberView's wrapper div carries this class (#panelMatch,
+   above, is a <section> styled directly by id instead) — same 2-column
+   grid, same gap, as the youth Your Match tab. */
+.match-panel-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start;
+}
+@media (max-width:900px){
+  .match-panel-grid{grid-template-columns:1fr;}
+}
+
+/* ---- Senior view: formatted identically to the youth Your Match tab
+   above — same card padding/margins, same availability-picker and chat
+   sizing. Mirrors the #panelMatch-scoped rules above but scoped to
+   #seniorMemberView instead, since senior's cards aren't inside a
+   .tab-panel. Note this is a deliberate departure from this file's
+   usual "senior keeps the original, roomier sizing" pattern — asked
+   for explicitly, so senior's page is now as compact as youth's. ---- */
+#seniorMemberView .dg-card{padding:12px 16px;}
+#seniorMemberView .dg-card-head{margin-bottom:6px;}
+#seniorMemberView .dg-card-sub{margin-bottom:6px;}
+#seniorMemberView .dg-card-full{margin-bottom:0;}
+#seniorMemberView .inline-chat-box{min-height:110px; max-height:150px;}
+#seniorMemberView .avail-picker{margin-top:6px;}
+#seniorMemberView .avail-summary{margin-top:6px; font-size:13px;}
+
 /* ===================================================
    LOG HOURS (My Impact card — Opportunities & Impact tab)
 =================================================== */
@@ -975,7 +1000,28 @@ footer a:hover{color:#fff;}
 <section class="tab-panel hidden" id="panelHome" aria-labelledby="tabBtnHome" tabindex="-1">
   <!-- #interviewStatusCard is inserted here (JS) when not yet verified -->
   <div class="dash-grid-2" id="homePhotoRow">
-    <!-- #profilePhotoCard is inserted here (JS) -->
+    <!-- Profile Photo lives here permanently now — it used to be a
+         shared element that defaulted into #seniorMemberView and got
+         JS-moved here for youth, but the senior page no longer shows a
+         photo upload card at all, so there's nowhere else for it to
+         default to. -->
+    <div class="dg-card" id="profilePhotoCard">
+      <div class="dg-card-head">
+        <div class="dg-badge dg-badge-mint" id="photoBadgeIcon"></div>
+        <h3 class="dg-card-title">Profile Photo</h3>
+      </div>
+      <p class="dg-card-sub">Add a photo so your match can put a face to your name.</p>
+      <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+        <div class="match-avatar" id="myAvatarPreview" style="width:88px; height:88px;">
+          <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <button type="button" class="btn btn-outline" id="choosePhotoBtn">Choose Photo</button>
+          <input type="file" id="avatarFileInput" accept="image/png, image/jpeg, image/webp" style="display:none;">
+          <p id="avatarUploadStatus" style="margin-top:8px; font-size:14px; color:var(--ink-soft);"></p>
+        </div>
+      </div>
+    </div>
     <div class="dg-card" id="editProfileCard">
       <div class="dg-card-head">
         <div class="dg-badge dg-badge-mint" id="editProfileBadgeIcon"></div>
@@ -1023,22 +1069,13 @@ footer a:hover{color:#fff;}
     <!-- #matchStatusGroup, #availabilityCard inserted here (JS) -->
   </div>
   <div class="match-panel-col" id="matchSideCol">
-    <!-- #visitCardGroup inserted here (JS), first -->
+    <!-- #visitCardGroup, #inlineChatCard, #callCard inserted here (JS) -->
     <div class="dg-card hidden" id="matchSideEmptyState">
       <div class="dg-card-head">
         <div class="dg-badge dg-badge-purple" id="matchSideEmptyBadgeIcon"></div>
         <h3 class="dg-card-title">Messages &amp; Calling</h3>
       </div>
       <p class="dg-card-sub">You'll be able to message and video call once you're matched with a senior.</p>
-    </div>
-    <!-- #inlineChatCard inserted here (JS), above the call card -->
-    <div class="dg-card hidden" id="callCard">
-      <div class="dg-card-head">
-        <div class="dg-badge dg-badge-rose" id="callBadgeIcon"></div>
-        <h3 class="dg-card-title">Calling</h3>
-      </div>
-      <p class="dg-card-sub">Start a face-to-face video call with your match.</p>
-      <button type="button" class="btn btn-primary" id="startCallBtn">Start Video Call</button>
     </div>
   </div>
 </section>
@@ -1052,68 +1089,18 @@ footer a:hover{color:#fff;}
 </section>
 
 <!-- ===================================================
-     SENIOR VIEW — flat sections, unchanged. Shown only for confirmed
-     senior accounts (youths never see this; their copies of these
-     same cards get moved up into the tab panels above instead). -->
+     SENIOR VIEW — shown only for confirmed senior accounts. Formatted
+     identically to the youth Your Match tab above (same 2-column grid,
+     same card sizing) — no Profile Photo / Your Details, and no other
+     tabs, just the 5 match/scheduling/messaging/calling sections. -->
 <div class="dash-shell hidden" id="seniorMemberView">
-  <div class="dash-grid-2">
-    <div class="dg-card" id="profilePhotoCard">
-      <div class="dg-card-head">
-        <div class="dg-badge dg-badge-mint" id="photoBadgeIcon"></div>
-        <h3 class="dg-card-title">Profile Photo</h3>
-      </div>
-      <p class="dg-card-sub">Add a photo so your match can put a face to your name.</p>
-      <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
-        <div class="match-avatar" id="myAvatarPreview" style="width:88px; height:88px;">
-          <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
-        </div>
-        <div>
-          <button type="button" class="btn btn-outline" id="choosePhotoBtn">Choose Photo</button>
-          <input type="file" id="avatarFileInput" accept="image/png, image/jpeg, image/webp" style="display:none;">
-          <p id="avatarUploadStatus" style="margin-top:8px; font-size:14px; color:var(--ink-soft);"></p>
-        </div>
-      </div>
-    </div>
-
-    <div class="dg-card" id="seniorDetailsCard">
-      <div class="dg-card-head">
-        <div class="dg-badge dg-badge-mint" id="seniorDetailsBadgeIcon"></div>
-        <h3 class="dg-card-title">Your Details</h3>
-      </div>
-      <p class="dg-card-sub">Keep this up to date — it's what we used to help find your match.</p>
-      <form id="seniorDetailsForm">
-        <div class="field-row">
-          <div class="field">
-            <label for="seniorEditName">Your name</label>
-            <input type="text" id="seniorEditName" required>
-          </div>
-          <div class="field">
-            <label for="seniorEditPhone">Phone</label>
-            <input type="tel" id="seniorEditPhone">
-          </div>
-        </div>
-        <div class="field">
-          <label for="seniorEditCareer">Past career</label>
-          <input type="text" id="seniorEditCareer">
-        </div>
-        <div class="field">
-          <label>Hobbies &amp; Interests <span class="field-hint">(used to match you with a volunteer)</span></label>
-          <textarea id="seniorEditInterests" rows="3"></textarea>
-        </div>
-        <div class="field">
-          <label for="seniorEditLanguages">Language(s) <span class="field-hint">(optional)</span></label>
-          <input type="text" id="seniorEditLanguages" placeholder="e.g. English, Cantonese">
-        </div>
-        <button type="submit" class="btn btn-primary" id="seniorSaveDetailsBtn">Save Changes</button>
-        <p id="seniorSaveDetailsStatus" style="margin-top:10px; font-size:15px; font-weight:700; display:none;"></p>
-      </form>
-    </div>
-  </div>
-
-  <!-- Same 2-column format as youth's Your Match tab (#panelMatch):
-       left = who you're matched with + your availability, right =
-       scheduling + messages. No section heading, same as that tab. -->
-  <div class="match-panel-grid" style="margin-top:24px;">
+  <!-- Same format as youth's Your Match tab (#panelMatch) — same
+       2-column grid, same card sizing (see the #seniorMemberView-scoped
+       rules alongside #panelMatch's in the CSS above), same 5 sections:
+       Your Match, Your Weekly Availability, Schedule a Visit, Messages,
+       Calling. No Profile Photo / Your Details here anymore — that's
+       youth-only now (Home tab), not part of this page. -->
+  <div class="match-panel-grid">
     <div class="match-panel-col">
       <div class="dg-card hidden" id="interviewStatusCard">
         <div class="dg-card-head">
@@ -1207,6 +1194,18 @@ footer a:hover{color:#fff;}
           <button type="button" class="btn btn-primary" id="inlineChatSendBtn">Send</button>
         </div>
         <p style="margin-top:14px;"><a href="messages" style="color:var(--teal); font-weight:700; text-decoration:none; font-size:15px;">See full message history →</a></p>
+      </div>
+
+      <!-- #callCard is inserted here (JS) for youth, appended into
+           #matchSideCol by activateYouthTabs() — this static position,
+           right after Messages, is where it stays for senior. -->
+      <div class="dg-card hidden" id="callCard">
+        <div class="dg-card-head">
+          <div class="dg-badge dg-badge-rose" id="callBadgeIcon"></div>
+          <h3 class="dg-card-title">Calling</h3>
+        </div>
+        <p class="dg-card-sub">Start a face-to-face video call with your match.</p>
+        <button type="button" class="btn btn-primary" id="startCallBtn">Start Video Call</button>
       </div>
     </div>
   </div>
@@ -1350,7 +1349,6 @@ footer a:hover{color:#fff;}
       scheduleBadgeIcon: 'calendar',
       messagesBadgeIcon: 'chat',
       editProfileBadgeIcon: 'person',
-      seniorDetailsBadgeIcon: 'person',
       callBadgeIcon: 'video',
       matchSideEmptyBadgeIcon: 'chat',
       interviewStatusIcon: 'clock',
@@ -1367,11 +1365,15 @@ footer a:hover{color:#fff;}
   // Youth member tabs: Home / Your Match / Opportunities & Impact.
   //
   // Only youth accounts get this tabbed layout — seniors keep the flat
-  // #seniorMemberView sections untouched. The shared cards (match
-  // status, availability, schedule, messages) live in the senior
+  // #seniorMemberView sections, now formatted identically to the Your
+  // Match tab below (same grid, same card sizing) minus Profile Photo/
+  // Your Details, which are youth-only. The shared cards (match status,
+  // availability, schedule, messages, calling) live in the senior
   // markup by default and are MOVED (not cloned) into the tab panels
   // below the first time a youth's role is confirmed, so there's still
-  // exactly one #availabilityCard etc. in the document.
+  // exactly one #availabilityCard etc. in the document. Profile Photo
+  // is the one exception — it lives permanently in the youth Home tab
+  // now, since the senior page has nowhere for it to default to.
   // ---------------------------------------------------------
   const TAB_NAMES = ['home', 'match', 'opportunities'];
 
@@ -1411,7 +1413,6 @@ footer a:hover{color:#fff;}
     const panelHome = document.getElementById('panelHome');
     const homePhotoRow = document.getElementById('homePhotoRow');
     panelHome.insertBefore(document.getElementById('interviewStatusCard'), homePhotoRow);
-    homePhotoRow.insertBefore(document.getElementById('profilePhotoCard'), document.getElementById('editProfileCard'));
 
     // Your Match tab: left column = Your Match + Your Weekly
     // Availability, right column = Schedule a Visit + Messages + Calling.
@@ -1421,7 +1422,8 @@ footer a:hover{color:#fff;}
 
     const matchSideCol = document.getElementById('matchSideCol');
     matchSideCol.insertBefore(document.getElementById('visitCardGroup'), document.getElementById('matchSideEmptyState'));
-    matchSideCol.insertBefore(document.getElementById('inlineChatCard'), document.getElementById('callCard'));
+    matchSideCol.appendChild(document.getElementById('inlineChatCard'));
+    matchSideCol.appendChild(document.getElementById('callCard'));
 
     document.getElementById('memberTabs').classList.remove('hidden');
     switchTab('home');
@@ -1486,59 +1488,6 @@ footer a:hover{color:#fff;}
 
     if(updates.first_name){
       document.getElementById('memberGreeting').textContent = 'Welcome back, ' + updates.first_name;
-    }
-  }
-
-  // ---------------------------------------------------------
-  // Senior flat view: Your Details card — same idea and RLS pattern
-  // (senior_profiles has its own "senior can update own profile"
-  // policy, mirroring youth_profiles') as the youth Home tab's Your
-  // Details form above, just with senior_profiles' fields.
-  // ---------------------------------------------------------
-  function populateSeniorDetailsForm(seniorProfile){
-    document.getElementById('seniorEditName').value = seniorProfile.full_name || '';
-    document.getElementById('seniorEditPhone').value = seniorProfile.phone || '';
-    document.getElementById('seniorEditCareer').value = seniorProfile.past_career || '';
-    document.getElementById('seniorEditInterests').value = seniorProfile.interests || '';
-    document.getElementById('seniorEditLanguages').value = seniorProfile.languages || '';
-  }
-
-  async function saveSeniorDetails(e){
-    e.preventDefault();
-    const btn = document.getElementById('seniorSaveDetailsBtn');
-    const statusEl = document.getElementById('seniorSaveDetailsStatus');
-    const prevText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
-    statusEl.style.display = 'none';
-
-    const updates = {
-      full_name: document.getElementById('seniorEditName').value.trim(),
-      phone: document.getElementById('seniorEditPhone').value.trim() || null,
-      past_career: document.getElementById('seniorEditCareer').value.trim() || null,
-      interests: document.getElementById('seniorEditInterests').value.trim() || null,
-      languages: document.getElementById('seniorEditLanguages').value.trim() || null
-    };
-
-    const { error } = await cq.from('senior_profiles').update(updates).eq('id', currentUserId);
-
-    btn.disabled = false;
-    btn.textContent = prevText;
-
-    if(error){
-      console.error('Could not save senior profile details:', error);
-      statusEl.textContent = 'Could not save your changes. Please try again.';
-      statusEl.style.color = 'var(--rust)';
-      statusEl.style.display = 'block';
-      return;
-    }
-
-    statusEl.textContent = 'Saved ✓';
-    statusEl.style.color = 'var(--teal-deep)';
-    statusEl.style.display = 'block';
-
-    if(updates.full_name){
-      document.getElementById('memberGreeting').textContent = 'Welcome back, ' + updates.full_name.split(' ')[0];
     }
   }
 
@@ -2571,7 +2520,6 @@ footer a:hover{color:#fff;}
   document.getElementById('avatarFileInput').addEventListener('change', handleAvatarUpload);
   wireMemberTabs();
   document.getElementById('editProfileForm').addEventListener('submit', saveProfileDetails);
-  document.getElementById('seniorDetailsForm').addEventListener('submit', saveSeniorDetails);
   document.getElementById('startCallBtn').addEventListener('click', startVideoCall);
   document.getElementById('endCallBtn').addEventListener('click', endVideoCall);
   document.getElementById('logHoursForm').addEventListener('submit', handleLogHoursSubmit);
@@ -2673,7 +2621,6 @@ footer a:hover{color:#fff;}
         displayFirstName = seniorProfile.full_name.split(' ')[0];
         myAvatarUrl = seniorProfile.avatar_url;
         document.getElementById('seniorMemberView').classList.remove('hidden');
-        populateSeniorDetailsForm(seniorProfile);
       } else {
         // A genuinely signed-in user with no profile row at all is a
         // real account problem, not "you're not logged in" — redirecting
