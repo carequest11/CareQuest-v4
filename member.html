@@ -592,11 +592,19 @@ footer a:hover{color:#fff;}
    AVAILABILITY GRID + VISIT SCHEDULING (member page)
 =================================================== */
 .avail-grid-wrap{overflow-x:auto; margin-top:20px; -webkit-overflow-scrolling:touch;}
-.avail-grid-v2{border-collapse:separate; border-spacing:6px; width:100%;}
+/* table-layout:fixed is what makes every time-block column equal
+   width — the default `auto` layout sizes each column to fit its own
+   header text, so "11am–12pm" got a visibly wider column than "8–9am".
+   Under fixed layout, column widths come from the FIRST row's cells;
+   the day-label column gets an explicit width below (95px / 70px
+   compact) and the 12 time-block th's are left unset, so fixed layout
+   splits the remaining space evenly across all of them. */
+.avail-grid-v2{border-collapse:separate; border-spacing:6px; width:100%; table-layout:fixed;}
 .avail-grid-v2 th{
   font-size:14px; font-weight:700; color:var(--ink-soft);
   padding:4px 6px; text-align:center; white-space:nowrap;
 }
+.avail-grid-v2 thead th:first-child{width:95px;}
 .avail-grid-v2 th.avail-daylabel{
   font-size:17px; font-weight:700; color:var(--ink);
   white-space:nowrap; padding-right:14px; text-align:right;
@@ -844,6 +852,7 @@ footer a:hover{color:#fff;}
 #panelMatch .avail-grid-wrap{margin-top:6px;}
 #panelMatch .avail-grid-v2{border-spacing:2px;}
 #panelMatch .avail-grid-v2 th{padding:2px 3px; font-size:12px;}
+#panelMatch .avail-grid-v2 thead th:first-child{width:70px;}
 #panelMatch .avail-grid-v2 th.avail-daylabel{font-size:13px; padding-right:6px;}
 #panelMatch .avail-block-btn{min-height:30px; font-size:12px; border-radius:6px;}
 #panelMatch .avail-summary{margin-top:6px; font-size:13px;}
