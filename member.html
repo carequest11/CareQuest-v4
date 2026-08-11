@@ -860,16 +860,33 @@ footer a:hover{color:#fff;}
   max-height:220px; overflow-y:auto;
 }
 .impact-hours-empty{color:var(--ink-soft); font-size:14px; line-height:1.5; margin:0;}
+/* Entry stacks info above its actions (rather than a side-by-side row)
+   so labeled Edit/Delete buttons always have room to read clearly,
+   even in this card's narrower 3-up grid column. */
 .impact-hours-entry{
-  display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+  display:flex; flex-direction:column; gap:8px;
   padding:10px 0; border-bottom:1px solid var(--line);
 }
 .impact-hours-entry:last-child{border-bottom:none; padding-bottom:0;}
 .impact-hours-entry-info{font-size:14px; line-height:1.5; color:var(--ink);}
 .impact-hours-entry-date{color:var(--ink-soft); font-size:13px; margin-top:2px;}
-.impact-hours-entry-actions{display:flex; gap:6px; flex-shrink:0;}
-.impact-hours-entry-actions .icon-btn{width:36px; height:36px;}
-.impact-hours-entry-actions svg{width:16px; height:16px;}
+.impact-hours-entry-actions{display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;}
+/* Icon + visible label (not icon-only) so the action reads at a
+   glance, not just on hover/for screen readers — teal for the
+   everyday action, rust for the destructive one, matching how those
+   two colors are already used elsewhere on the site. */
+.impact-action-btn{
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:'Inter',sans-serif; font-weight:700; font-size:13px;
+  padding:8px 14px; min-height:44px; border-radius:999px; border:1.5px solid var(--line);
+  background:#fff; cursor:pointer;
+  transition:background .15s ease, border-color .15s ease, color .15s ease;
+}
+.impact-action-btn svg{width:15px; height:15px; flex-shrink:0;}
+.impact-action-edit{color:var(--teal-deep); border-color:var(--teal);}
+.impact-action-edit:hover{background:var(--teal); color:#fff;}
+.impact-action-delete{color:#8F3A24; border-color:#D9B79C;}
+.impact-action-delete:hover{background:#8F3A24; color:#fff; border-color:#8F3A24;}
 
 .modal-overlay{
   position:fixed; inset:0; background:rgba(35,43,54,.55); z-index:300;
@@ -1605,8 +1622,8 @@ footer a:hover{color:#fff;}
             '<div class="impact-hours-entry-date">' + escapeHtml(dateLabel) + '</div>' +
           '</div>' +
           '<div class="impact-hours-entry-actions">' +
-            '<button type="button" class="icon-btn" data-action="edit" data-id="' + escapeHtml(entry.id) + '" aria-label="Edit entry: ' + a11yLabel + '">' + DASH_ICONS.edit + '</button>' +
-            '<button type="button" class="icon-btn" data-action="delete" data-id="' + escapeHtml(entry.id) + '" aria-label="Delete entry: ' + a11yLabel + '">' + DASH_ICONS.trash + '</button>' +
+            '<button type="button" class="impact-action-btn impact-action-edit" data-action="edit" data-id="' + escapeHtml(entry.id) + '" aria-label="Edit entry: ' + a11yLabel + '">' + DASH_ICONS.edit + '<span>Edit</span></button>' +
+            '<button type="button" class="impact-action-btn impact-action-delete" data-action="delete" data-id="' + escapeHtml(entry.id) + '" aria-label="Delete entry: ' + a11yLabel + '">' + DASH_ICONS.trash + '<span>Delete</span></button>' +
           '</div>' +
         '</div>'
       );
