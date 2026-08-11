@@ -1056,13 +1056,65 @@ footer a:hover{color:#fff;}
      senior accounts (youths never see this; their copies of these
      same cards get moved up into the tab panels above instead). -->
 <div class="dash-shell hidden" id="seniorMemberView">
-  <section class="dash-section" aria-labelledby="carequestSectionHeading">
-    <div class="dash-section-head">
-      <h2 id="carequestSectionHeading">Your CareQuest</h2>
-      <p>Your interview, your match, and your next visit.</p>
+  <div class="dash-grid-2">
+    <div class="dg-card" id="profilePhotoCard">
+      <div class="dg-card-head">
+        <div class="dg-badge dg-badge-mint" id="photoBadgeIcon"></div>
+        <h3 class="dg-card-title">Profile Photo</h3>
+      </div>
+      <p class="dg-card-sub">Add a photo so your match can put a face to your name.</p>
+      <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+        <div class="match-avatar" id="myAvatarPreview" style="width:88px; height:88px;">
+          <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <button type="button" class="btn btn-outline" id="choosePhotoBtn">Choose Photo</button>
+          <input type="file" id="avatarFileInput" accept="image/png, image/jpeg, image/webp" style="display:none;">
+          <p id="avatarUploadStatus" style="margin-top:8px; font-size:14px; color:var(--ink-soft);"></p>
+        </div>
+      </div>
     </div>
 
-    <div class="dash-grid-2">
+    <div class="dg-card" id="seniorDetailsCard">
+      <div class="dg-card-head">
+        <div class="dg-badge dg-badge-mint" id="seniorDetailsBadgeIcon"></div>
+        <h3 class="dg-card-title">Your Details</h3>
+      </div>
+      <p class="dg-card-sub">Keep this up to date — it's what we used to help find your match.</p>
+      <form id="seniorDetailsForm">
+        <div class="field-row">
+          <div class="field">
+            <label for="seniorEditName">Your name</label>
+            <input type="text" id="seniorEditName" required>
+          </div>
+          <div class="field">
+            <label for="seniorEditPhone">Phone</label>
+            <input type="tel" id="seniorEditPhone">
+          </div>
+        </div>
+        <div class="field">
+          <label for="seniorEditCareer">Past career</label>
+          <input type="text" id="seniorEditCareer">
+        </div>
+        <div class="field">
+          <label>Hobbies &amp; Interests <span class="field-hint">(used to match you with a volunteer)</span></label>
+          <textarea id="seniorEditInterests" rows="3"></textarea>
+        </div>
+        <div class="field">
+          <label for="seniorEditLanguages">Language(s) <span class="field-hint">(optional)</span></label>
+          <input type="text" id="seniorEditLanguages" placeholder="e.g. English, Cantonese">
+        </div>
+        <button type="submit" class="btn btn-primary" id="seniorSaveDetailsBtn">Save Changes</button>
+        <p id="seniorSaveDetailsStatus" style="margin-top:10px; font-size:15px; font-weight:700; display:none;"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Same 2-column format as youth's Your Match tab (#panelMatch):
+       left = who you're matched with + your availability, right =
+       scheduling + messages. No section heading, same as that tab. -->
+  <div class="match-panel-grid" style="margin-top:24px;">
+    <div class="match-panel-col">
       <div class="dg-card hidden" id="interviewStatusCard">
         <div class="dg-card-head">
           <div class="dg-badge dg-badge-amber" id="interviewBadgeIcon"></div>
@@ -1098,27 +1150,24 @@ footer a:hover{color:#fff;}
           </div>
         </div>
       </div>
+
+      <div class="dg-card dg-card-full" id="availabilityCard">
+        <div class="dg-card-head">
+          <div class="dg-badge dg-badge-sky" id="availabilityBadgeIcon"></div>
+          <h3 class="dg-card-title">Your Weekly Availability</h3>
+        </div>
+        <p class="dg-card-sub">Choose a day, then tap the times you're usually free. Once you're matched, this is what your match sees when booking a visit.</p>
+        <div class="avail-picker">
+          <div class="day-tabs" id="availDayTabs" aria-label="Choose a day to edit"></div>
+          <div id="availDayPanels"></div>
+        </div>
+        <p class="avail-summary" id="availSummary">Loading your availability…</p>
+        <button type="button" class="btn btn-primary" id="saveAvailBtn" style="margin-top:8px;">Save Availability</button>
+        <p id="availSaveStatus" style="margin-top:10px; font-size:15px; color:var(--teal-deep); font-weight:700; display:none;">Saved ✓</p>
+      </div>
     </div>
 
-    <div class="dash-grid-2">
-      <div class="dg-card" id="profilePhotoCard">
-        <div class="dg-card-head">
-          <div class="dg-badge dg-badge-mint" id="photoBadgeIcon"></div>
-          <h3 class="dg-card-title">Profile Photo</h3>
-        </div>
-        <p class="dg-card-sub">Add a photo so your match can put a face to your name.</p>
-        <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
-          <div class="match-avatar" id="myAvatarPreview" style="width:88px; height:88px;">
-            <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#2F6B62" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke="#2F6B62" stroke-width="1.6" stroke-linecap="round"/></svg>
-          </div>
-          <div>
-            <button type="button" class="btn btn-outline" id="choosePhotoBtn">Choose Photo</button>
-            <input type="file" id="avatarFileInput" accept="image/png, image/jpeg, image/webp" style="display:none;">
-            <p id="avatarUploadStatus" style="margin-top:8px; font-size:14px; color:var(--ink-soft);"></p>
-          </div>
-        </div>
-      </div>
-
+    <div class="match-panel-col">
       <div id="visitCardGroup">
         <div class="dg-card hidden" id="upcomingVisitCard">
           <div class="dg-card-head">
@@ -1144,81 +1193,23 @@ footer a:hover{color:#fff;}
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="dash-grid-2">
-      <div class="dg-card" id="seniorDetailsCard">
+      <div class="dg-card dg-card-full hidden" id="inlineChatCard">
         <div class="dg-card-head">
-          <div class="dg-badge dg-badge-mint" id="seniorDetailsBadgeIcon"></div>
-          <h3 class="dg-card-title">Your Details</h3>
+          <div class="dg-badge dg-badge-purple" id="messagesBadgeIcon"></div>
+          <h3 class="dg-card-title">Messages</h3>
         </div>
-        <p class="dg-card-sub">Keep this up to date — it's what we used to help find your match.</p>
-        <form id="seniorDetailsForm">
-          <div class="field-row">
-            <div class="field">
-              <label for="seniorEditName">Your name</label>
-              <input type="text" id="seniorEditName" required>
-            </div>
-            <div class="field">
-              <label for="seniorEditPhone">Phone</label>
-              <input type="tel" id="seniorEditPhone">
-            </div>
-          </div>
-          <div class="field">
-            <label for="seniorEditCareer">Past career</label>
-            <input type="text" id="seniorEditCareer">
-          </div>
-          <div class="field">
-            <label>Hobbies &amp; Interests <span class="field-hint">(used to match you with a volunteer)</span></label>
-            <textarea id="seniorEditInterests" rows="3"></textarea>
-          </div>
-          <div class="field">
-            <label for="seniorEditLanguages">Language(s) <span class="field-hint">(optional)</span></label>
-            <input type="text" id="seniorEditLanguages" placeholder="e.g. English, Cantonese">
-          </div>
-          <button type="submit" class="btn btn-primary" id="seniorSaveDetailsBtn">Save Changes</button>
-          <p id="seniorSaveDetailsStatus" style="margin-top:10px; font-size:15px; font-weight:700; display:none;"></p>
-        </form>
+        <p class="dg-card-sub">Recent messages with your match.</p>
+        <div class="inline-chat-box" id="inlineChatBox" role="log" aria-live="polite" aria-label="Recent messages with your match" tabindex="0"></div>
+        <div class="inline-chat-input-row">
+          <label for="inlineChatInput" class="sr-only">Type a message</label>
+          <input type="text" id="inlineChatInput" placeholder="Type a message…">
+          <button type="button" class="btn btn-primary" id="inlineChatSendBtn">Send</button>
+        </div>
+        <p style="margin-top:14px;"><a href="messages" style="color:var(--teal); font-weight:700; text-decoration:none; font-size:15px;">See full message history →</a></p>
       </div>
     </div>
-  </section>
-
-  <section class="dash-section" aria-labelledby="detailsSectionHeading">
-    <div class="dash-section-head">
-      <h2 id="detailsSectionHeading">Availability &amp; Messages</h2>
-      <p>Your weekly free time, and your conversation with your match.</p>
-    </div>
-
-    <div class="dg-card dg-card-full" id="availabilityCard">
-      <div class="dg-card-head">
-        <div class="dg-badge dg-badge-sky" id="availabilityBadgeIcon"></div>
-        <h3 class="dg-card-title">Your Weekly Availability</h3>
-      </div>
-      <p class="dg-card-sub">Choose a day, then tap the times you're usually free. Once you're matched, this is what your match sees when booking a visit.</p>
-      <div class="avail-picker">
-        <div class="day-tabs" id="availDayTabs" aria-label="Choose a day to edit"></div>
-        <div id="availDayPanels"></div>
-      </div>
-      <p class="avail-summary" id="availSummary">Loading your availability…</p>
-      <button type="button" class="btn btn-primary" id="saveAvailBtn" style="margin-top:8px;">Save Availability</button>
-      <p id="availSaveStatus" style="margin-top:10px; font-size:15px; color:var(--teal-deep); font-weight:700; display:none;">Saved ✓</p>
-    </div>
-
-    <div class="dg-card dg-card-full hidden" id="inlineChatCard">
-      <div class="dg-card-head">
-        <div class="dg-badge dg-badge-purple" id="messagesBadgeIcon"></div>
-        <h3 class="dg-card-title">Messages</h3>
-      </div>
-      <p class="dg-card-sub">Recent messages with your match.</p>
-      <div class="inline-chat-box" id="inlineChatBox" role="log" aria-live="polite" aria-label="Recent messages with your match" tabindex="0"></div>
-      <div class="inline-chat-input-row">
-        <label for="inlineChatInput" class="sr-only">Type a message</label>
-        <input type="text" id="inlineChatInput" placeholder="Type a message…">
-        <button type="button" class="btn btn-primary" id="inlineChatSendBtn">Send</button>
-      </div>
-      <p style="margin-top:14px;"><a href="messages" style="color:var(--teal); font-weight:700; text-decoration:none; font-size:15px;">See full message history →</a></p>
-    </div>
-  </section>
+  </div>
 </div>
 
 <div class="call-overlay hidden" id="callOverlay">
