@@ -1393,6 +1393,11 @@ footer a:hover{color:#fff;}
         btn.removeAttribute('aria-current');
       }
     });
+    // Messages usually finish loading while "Your Match" is still
+    // hidden (Home is the default tab) — #inlineChatBox had a
+    // scrollHeight of 0 at that point, so redo the scroll-to-bottom now
+    // that the tab, and the box inside it, are actually visible.
+    if(tabName === 'match') scrollInlineChatToBottom();
   }
 
   function wireMemberTabs(){
@@ -2374,6 +2379,22 @@ footer a:hover{color:#fff;}
   const inlineRenderedIds = new Set();
   const RECENT_MESSAGE_COUNT = 20;
 
+  // #inlineChatBox reports scrollHeight 0 while it (or an ancestor, e.g.
+  // youth's #panelMatch tab panel before "Your Match" is ever clicked)
+  // is display:none — setting scrollTop right then is a no-op, which is
+  // why the thread used to silently land at the top instead of the
+  // latest message the moment the tab became visible. requestAnimationFrame
+  // defers the scroll to just after the browser's next layout/paint, so
+  // it always sees the box's real, current height — whether that's
+  // right after appending a message, or right after an ancestor tab
+  // just became visible (see switchTab() below, which calls this again
+  // for exactly that reason).
+  function scrollInlineChatToBottom(){
+    const box = document.getElementById('inlineChatBox');
+    if(!box) return;
+    requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
+  }
+
   function appendInlineMessage(msg){
     if(inlineRenderedIds.has(msg.id)) return;
     inlineRenderedIds.add(msg.id);
@@ -2394,9 +2415,8 @@ footer a:hover{color:#fff;}
     wrap.appendChild(meta);
     wrap.appendChild(body);
 
-    const box = document.getElementById('inlineChatBox');
-    box.appendChild(wrap);
-    box.scrollTop = box.scrollHeight;
+    document.getElementById('inlineChatBox').appendChild(wrap);
+    scrollInlineChatToBottom();
   }
 
   async function loadRecentMessages(matchId){
