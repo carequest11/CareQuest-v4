@@ -1196,6 +1196,7 @@ footer a:hover{color:#fff;}
         <label for="logHoursDescription">Description <span class="field-hint">e.g. "Community Garden Visit"</span></label>
         <input type="text" id="logHoursDescription" maxlength="120">
       </div>
+      <p class="field-error hidden" id="logHoursFormError"></p>
       <div class="log-hours-modal-actions">
         <button type="button" class="btn btn-outline" id="logHoursCancelBtn">Cancel</button>
         <button type="submit" class="btn btn-primary" id="logHoursSaveBtn">Save Hours</button>
@@ -1574,17 +1575,37 @@ footer a:hover{color:#fff;}
   }
 
   // ---------------------------------------------------------
-  // Log Hours (My Impact card only). Entries live in local page state
-  // for now — `impactHoursEntries` is shaped as an array of
-  // { id, date, description, hours } specifically so it's easy to swap
-  // for a real Supabase-backed fetch/insert/update/delete later without
-  // touching any of the rendering code below.
+  // Log Hours (My Impact card only). Backed by public.impact_hours —
+  // see the "Impact hours" section of supabase-schema.sql. RLS scopes
+  // every read/write to the signed-in youth's own rows, same pattern
+  // as availability. impactHoursEntries mirrors the DB rows client-side
+  // (renamed entry_date -> date to match the rest of this file's
+  // camelCase) so the rendering code below never has to know it's
+  // talking to Supabase.
   // ---------------------------------------------------------
-  let impactHoursEntries = [
-    { id: 'h-seed-1', date: '2025-05-24', description: 'Community Garden Visit', hours: 2 },
-    { id: 'h-seed-2', date: '2025-05-17', description: 'Board Game Afternoon', hours: 1.5 }
-  ];
+  let impactHoursEntries = [];
   let impactModalTrigger = null;
+
+  async function loadImpactHours(){
+    const { data, error } = await cq
+      .from('impact_hours')
+      .select('id, entry_date, description, hours')
+      .eq('youth_id', currentUserId)
+      .order('entry_date', { ascending: false });
+
+    if(error){
+      console.error('Could not load impact hours:', error);
+      return;
+    }
+
+    impactHoursEntries = (data || []).map(row => ({
+      id: row.id,
+      date: row.entry_date,
+      description: row.description || '',
+      hours: Number(row.hours)
+    }));
+    renderMyImpactSection();
+  }
 
   function formatHours(n){
     const rounded = Math.round(n * 100) / 100;
@@ -1662,13 +1683,19 @@ footer a:hover{color:#fff;}
   }
 
   function clearLogHoursErrors(){
-    ['logHoursDateError', 'logHoursHoursError'].forEach(id => {
+    ['logHoursDateError', 'logHoursHoursError', 'logHoursFormError'].forEach(id => {
       const el = document.getElementById(id);
       el.innerHTML = '';
       el.classList.add('hidden');
     });
     document.getElementById('logHoursDate').removeAttribute('aria-invalid');
     document.getElementById('logHoursHours').removeAttribute('aria-invalid');
+  }
+
+  function showFormError(message){
+    const errorEl = document.getElementById('logHoursFormError');
+    errorEl.innerHTML = DASH_ICONS.warning + '<span>' + escapeHtml(message) + '</span>';
+    errorEl.classList.remove('hidden');
   }
 
   function showFieldError(inputId, errorId, message){
@@ -1736,7 +1763,7 @@ footer a:hover{color:#fff;}
     window.setTimeout(() => { el.textContent = message; }, 30);
   }
 
-  function handleLogHoursSubmit(e){
+  async function handleLogHoursSubmit(e){
     e.preventDefault();
     clearLogHoursErrors();
 
@@ -1770,35 +1797,44 @@ footer a:hover{color:#fff;}
       return;
     }
 
-    if(entryId){
-      const existing = impactHoursEntries.find(en => en.id === entryId);
-      if(existing){
-        existing.date = dateVal;
-        existing.hours = hoursNum;
-        existing.description = descriptionVal;
-      }
-    } else {
-      impactHoursEntries.push({
-        id: 'h-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
-        date: dateVal,
-        hours: hoursNum,
-        description: descriptionVal
-      });
+    const saveBtn = document.getElementById('logHoursSaveBtn');
+    const prevText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
+
+    const row = { youth_id: currentUserId, entry_date: dateVal, hours: hoursNum, description: descriptionVal || null };
+    const { error } = entryId
+      ? await cq.from('impact_hours').update(row).eq('id', entryId)
+      : await cq.from('impact_hours').insert(row);
+
+    saveBtn.disabled = false;
+    saveBtn.textContent = prevText;
+
+    if(error){
+      console.error('Could not save impact hours:', error);
+      showFormError('Could not save your hours. Please try again.');
+      return;
     }
 
     closeLogHoursModal();
-    renderMyImpactSection();
+    await loadImpactHours();
     announceImpactUpdate('Hours logged. Your total is now ' + formatHours(computeTotalHours()) + ' hours.');
   }
 
-  function handleDeleteEntry(id){
+  async function handleDeleteEntry(id){
     const entry = impactHoursEntries.find(en => en.id === id);
     if(!entry) return;
     const label = (entry.description || 'this entry') + ' on ' + formatHoursEntryDate(entry.date);
     if(!window.confirm('Delete ' + label + '? This can’t be undone.')) return;
 
-    impactHoursEntries = impactHoursEntries.filter(en => en.id !== id);
-    renderMyImpactSection();
+    const { error } = await cq.from('impact_hours').delete().eq('id', id);
+    if(error){
+      console.error('Could not delete impact hours entry:', error);
+      window.alert('Could not delete that entry. Please try again.');
+      return;
+    }
+
+    await loadImpactHours();
     announceImpactUpdate('Entry deleted. Your total is now ' + formatHours(computeTotalHours()) + ' hours.');
   }
 
@@ -1863,7 +1899,11 @@ footer a:hover{color:#fff;}
   // — never for seniors.
   function renderYouthDashboardSection(){
     mountComponent('opportunitiesCardMount', OpportunitiesCard, { opportunities: MOCK_OPPORTUNITIES, viewAllHref: '#' });
+    // Render immediately with whatever's in impactHoursEntries so far
+    // (empty on first load — shows the empty state briefly), then
+    // loadImpactHours() re-renders once the real rows arrive.
     renderMyImpactSection();
+    loadImpactHours();
     mountComponent('quickLinksCardMount', QuickLinksCard, { links: MOCK_QUICK_LINKS, exploreHref: '#' });
   }
 

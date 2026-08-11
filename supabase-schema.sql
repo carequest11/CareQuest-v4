@@ -474,3 +474,55 @@ create policy "users can delete their own avatar"
     bucket_id = 'avatars'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
+
+-- =========================================================
+-- Impact hours: youth-logged volunteer hours ("My Impact" card's
+-- Log Hours feature on member.html)
+--
+-- Run just this section if everything above is already applied.
+-- =========================================================
+
+-- One row per logged volunteering session. Personal tracking data —
+-- not shared with a youth's matched senior, staff, or anyone else;
+-- RLS below only ever lets a youth see/manage their own rows, same
+-- "own rows only" pattern as youth_profiles/senior_profiles.
+create table if not exists public.impact_hours (
+  id uuid primary key default gen_random_uuid(),
+  youth_id uuid not null references public.youth_profiles (id) on delete cascade,
+  entry_date date not null,
+  description text,
+  -- Mirrors the client-side 0.25-24 validation in member.html as a
+  -- defense-in-depth check, not a replacement for it. A same-style
+  -- check that entry_date isn't in the future isn't possible here —
+  -- Postgres requires CHECK constraints to use only IMMUTABLE
+  -- functions, and current_date is STABLE, not IMMUTABLE — so that
+  -- rule stays client-side only, same as the rest of this app's
+  -- validation.
+  hours numeric(4,2) not null check (hours >= 0.25 and hours <= 24),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists impact_hours_youth_id_idx on public.impact_hours (youth_id);
+
+alter table public.impact_hours enable row level security;
+
+drop policy if exists "youth can read own impact hours" on public.impact_hours;
+create policy "youth can read own impact hours"
+  on public.impact_hours for select
+  using (auth.uid() = youth_id);
+
+drop policy if exists "youth can insert own impact hours" on public.impact_hours;
+create policy "youth can insert own impact hours"
+  on public.impact_hours for insert
+  with check (auth.uid() = youth_id);
+
+drop policy if exists "youth can update own impact hours" on public.impact_hours;
+create policy "youth can update own impact hours"
+  on public.impact_hours for update
+  using (auth.uid() = youth_id)
+  with check (auth.uid() = youth_id);
+
+drop policy if exists "youth can delete own impact hours" on public.impact_hours;
+create policy "youth can delete own impact hours"
+  on public.impact_hours for delete
+  using (auth.uid() = youth_id);
