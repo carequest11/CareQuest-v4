@@ -316,6 +316,15 @@ html.home-lock, body.home-lock{
   background:var(--paper-deep); color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;
 }
 .day-tab.active{background:var(--teal); border-color:var(--teal); color:#fff;}
+/* Exactly 7 days, always — an even 7-column grid instead of the base
+   left-aligned flex row (which is why it read as unevenly extended:
+   the 7 tabs just sat at their own natural content width with empty
+   space after them, rather than filling the section edge to edge).
+   Stretched this wide, the short "Sun"/"Mon" text needs centering —
+   the base .day-tab has no text-align since it was never wide enough
+   for it to matter before. */
+#availDayTabs{display:grid; grid-template-columns:repeat(7, 1fr); gap:8px;}
+#availDayTabs .day-tab{text-align:center;}
 /* auto-fill instead of a fixed column count: naturally shows more
    columns in a roomy container (senior's full-width card) and fewer
    in a narrow one (youth's compact Your Match tab) without ever
@@ -607,7 +616,14 @@ footer a:hover{color:#fff;}
    .avail-block-btn layers the "is this block selected" state color
    on top of each pill's base .slot styling. */
 .avail-picker{margin-top:16px;}
-.avail-block-btn.on{background:var(--teal); border-color:var(--teal); color:#fff;}
+/* Rust, not teal — teal is the "day" selection color (.day-tab.active
+   above); a different color for "this time block is selected" makes
+   the two kinds of selection visually distinct instead of both
+   reading as the same generic "active" teal. Also matches the rust
+   used for .slot.selected/.slot-btn.selected elsewhere in this file
+   (the interview-time picker and the Schedule a Visit slot picker),
+   so "selected time slot" reads the same color everywhere on the site. */
+.avail-block-btn.on{background:var(--rust); border-color:var(--rust); color:#fff;}
 
 .avail-summary{
   margin-top:18px; font-size:17px; color:var(--ink-soft); font-style:italic; line-height:1.5;
