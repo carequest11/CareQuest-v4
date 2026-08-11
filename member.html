@@ -312,8 +312,12 @@ html.home-lock, body.home-lock{
 /* interview / availability day + slot pickers, recoloured to match */
 .day-tabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
 .day-tab{
+  /* Soft teal tint (not the same --paper-deep tan the time slots use
+     below) so the day row and the time grid read as two distinct
+     kinds of control at a glance, not one undifferentiated set of
+     boxes — it also pairs naturally with .day-tab.active's solid teal. */
   padding:10px 16px; min-height:44px; border-radius:10px; border:2px solid var(--line);
-  background:var(--paper-deep); color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;
+  background:#E1F0EA; color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;
 }
 .day-tab.active{background:var(--teal); border-color:var(--teal); color:#fff;}
 /* Exactly 7 days, always — an even 7-column grid instead of the base
@@ -325,12 +329,13 @@ html.home-lock, body.home-lock{
    for it to matter before. */
 #availDayTabs{display:grid; grid-template-columns:repeat(7, 1fr); gap:8px;}
 #availDayTabs .day-tab{text-align:center;}
-/* auto-fill instead of a fixed column count: naturally shows more
-   columns in a roomy container (senior's full-width card) and fewer
-   in a narrow one (youth's compact Your Match tab) without ever
-   squeezing a slot below a legible, tappable width — the same
-   auto-fit/minmax technique already used for .dash-grid-2/-3. */
-.slot-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:10px;}
+/* Fixed 4 columns (not auto-fill) — 12 time blocks always lay out as
+   a clean, predictable 4x3 grid regardless of container width, rather
+   than however many columns happen to fit at any given width. Each
+   pill still scales with the container (wider in the roomy senior
+   card, narrower in youth's compact tab) — only the column COUNT is
+   fixed, so it can't get tight enough to overlap either. */
+.slot-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;}
 .slot{
   padding:14px 10px; min-height:44px; border-radius:10px; border:2px solid var(--line);
   background:var(--paper-deep); color:var(--ink); font-size:15px; font-weight:600; text-align:center; cursor:pointer;
