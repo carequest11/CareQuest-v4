@@ -312,13 +312,18 @@ html.home-lock, body.home-lock{
 /* interview / availability day + slot pickers, recoloured to match */
 .day-tabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
 .day-tab{
-  padding:10px 16px; border-radius:10px; border:2px solid var(--line);
+  padding:10px 16px; min-height:44px; border-radius:10px; border:2px solid var(--line);
   background:var(--paper-deep); color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;
 }
 .day-tab.active{background:var(--teal); border-color:var(--teal); color:#fff;}
-.slot-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+/* auto-fill instead of a fixed column count: naturally shows more
+   columns in a roomy container (senior's full-width card) and fewer
+   in a narrow one (youth's compact Your Match tab) without ever
+   squeezing a slot below a legible, tappable width — the same
+   auto-fit/minmax technique already used for .dash-grid-2/-3. */
+.slot-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:10px;}
 .slot{
-  padding:14px 10px; border-radius:10px; border:2px solid var(--line);
+  padding:14px 10px; min-height:44px; border-radius:10px; border:2px solid var(--line);
   background:var(--paper-deep); color:var(--ink); font-size:15px; font-weight:600; text-align:center; cursor:pointer;
 }
 .slot.selected{background:var(--rust); border-color:var(--rust); color:#fff;}
@@ -591,39 +596,18 @@ footer a:hover{color:#fff;}
 /* ===================================================
    AVAILABILITY GRID + VISIT SCHEDULING (member page)
 =================================================== */
-.avail-grid-wrap{overflow-x:auto; margin-top:20px; -webkit-overflow-scrolling:touch;}
-/* table-layout:fixed is what makes every time-block column equal
-   width — the default `auto` layout sizes each column to fit its own
-   header text, so "11am–12pm" got a visibly wider column than "8–9am".
-   Under fixed layout, column widths come from the FIRST row's cells;
-   the day-label column gets an explicit width below (95px / 70px
-   compact) and the 12 time-block th's are left unset, so fixed layout
-   splits the remaining space evenly across all of them. */
-.avail-grid-v2{border-collapse:separate; border-spacing:6px; width:100%; table-layout:fixed;}
-.avail-grid-v2 th{
-  font-size:14px; font-weight:700; color:var(--ink-soft);
-  padding:4px 6px; text-align:center; white-space:nowrap;
-}
-.avail-grid-v2 thead th:first-child{width:95px;}
-.avail-grid-v2 th.avail-daylabel{
-  font-size:17px; font-weight:700; color:var(--ink);
-  white-space:nowrap; padding-right:14px; text-align:right;
-}
-.avail-block-btn{
-  /* min-width was 74px when there were 6 two-hour blocks; halved to
-     fit 12 one-hour blocks in the same table width without forcing
-     horizontal scroll — still comfortably above a 44px touch target
-     (min-height alone already clears that). No visible text sits
-     inside these cells (the time label is the column header), so a
-     narrower cell doesn't risk clipping anything. */
-  width:100%; min-width:48px; min-height:52px; border-radius:10px;
-  border:2px solid var(--line); background:var(--paper-deep); color:var(--ink);
-  font-size:15px; font-weight:600; cursor:pointer;
-  transition:background .15s ease, border-color .15s ease, color .15s ease;
-}
-.avail-block-btn:hover{border-color:var(--teal);}
+/* Day-tabs + a wrapping grid of labeled slot pills (see .day-tabs/
+   .day-tab/.slot-grid/.slot above) — not a 7x12 table. A table forces
+   every column to render at some fixed width simultaneously, which
+   is what kept overlapping at this card's narrower widths no matter
+   how the column math was tuned; a reflowing grid can't overlap
+   regardless of container width. #availDayPanels holds one
+   .slot-grid.avail-day-panel per day; only the selected day's is
+   visible (buildAvailabilityGrid()/selectAvailabilityDay() below).
+   .avail-block-btn layers the "is this block selected" state color
+   on top of each pill's base .slot styling. */
+.avail-picker{margin-top:16px;}
 .avail-block-btn.on{background:var(--teal); border-color:var(--teal); color:#fff;}
-.avail-block-btn:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
 
 .avail-summary{
   margin-top:18px; font-size:17px; color:var(--ink-soft); font-style:italic; line-height:1.5;
@@ -849,18 +833,11 @@ footer a:hover{color:#fff;}
    every other gap on this tab. */
 #panelMatch .dg-card-full{margin-bottom:0;}
 #panelMatch .inline-chat-box{min-height:110px; max-height:150px;}
-#panelMatch .avail-grid-wrap{margin-top:6px;}
-#panelMatch .avail-grid-v2{border-spacing:2px;}
-/* At this compact size, a nowrap header like "11am–12pm" can be wider
-   than its fixed column and spill into the next one — letting time
-   headers wrap to two lines is what actually guarantees no overlap,
-   rather than trying to guess an exact width that always fits. The
-   day-label column (single word, no good break point) instead gets a
-   safety-margin width and stays nowrap. */
-#panelMatch .avail-grid-v2 th{padding:2px 3px; font-size:12px; white-space:normal; line-height:1.2;}
-#panelMatch .avail-grid-v2 thead th:first-child{width:85px; white-space:nowrap;}
-#panelMatch .avail-grid-v2 th.avail-daylabel{font-size:13px; padding-right:6px; white-space:nowrap;}
-#panelMatch .avail-block-btn{min-height:30px; font-size:12px; border-radius:6px;}
+#panelMatch .avail-picker{margin-top:6px;}
+/* No compact overrides needed for .day-tabs/.day-tab/.slot-grid/.slot
+   themselves — auto-fill already adapts the slot grid to however much
+   width is actually available, so the same rules that work in the
+   roomy senior view also work here without separate tuning. */
 #panelMatch .avail-summary{margin-top:6px; font-size:13px;}
 @media (min-width:1024px){
   #panelMatch{max-height:calc(100vh - 170px); overflow-y:auto;}
@@ -1192,13 +1169,10 @@ footer a:hover{color:#fff;}
         <div class="dg-badge dg-badge-sky" id="availabilityBadgeIcon"></div>
         <h3 class="dg-card-title">Your Weekly Availability</h3>
       </div>
-      <p class="dg-card-sub">Tap the times you're usually free every week. Once you're matched, this is what your match sees when booking a visit.</p>
-      <div class="avail-grid-wrap">
-        <table class="avail-grid-v2" id="availGridTable">
-          <caption class="sr-only">Your weekly availability. Each button toggles whether you're free during that day and time block.</caption>
-          <thead><tr><th scope="col"><span class="sr-only">Day</span></th></tr></thead>
-          <tbody></tbody>
-        </table>
+      <p class="dg-card-sub">Choose a day, then tap the times you're usually free. Once you're matched, this is what your match sees when booking a visit.</p>
+      <div class="avail-picker">
+        <div class="day-tabs" id="availDayTabs" aria-label="Choose a day to edit"></div>
+        <div id="availDayPanels"></div>
       </div>
       <p class="avail-summary" id="availSummary">Loading your availability…</p>
       <button type="button" class="btn btn-primary" id="saveAvailBtn" style="margin-top:8px;">Save Availability</button>
@@ -2036,45 +2010,66 @@ footer a:hover{color:#fff;}
 
   function blockKey(day, start, end){ return day + '|' + start + '|' + end; }
 
+  // Day tabs + a wrapping grid of labeled time-slot pills, one day
+  // visible at a time — not a 7x12 table. A table forces all 84 cells
+  // to render at once at whatever width its columns get squeezed to,
+  // which is what kept overlapping at this card's narrower widths no
+  // matter how the column math was tuned; a flex/grid pill layout just
+  // reflows to fit, so it can't overlap regardless of container width.
+  // Reuses the .day-tabs/.day-tab/.slot-grid/.slot classes already
+  // used for the interview-time picker (youth-interview.html) for
+  // visual consistency, but with real <button>s (that demo uses plain
+  // <div>s, which aren't keyboard-focusable on their own).
   function buildAvailabilityGrid(){
-    const table = document.getElementById('availGridTable');
-    const headRow = table.querySelector('thead tr');
-    TIME_BLOCKS.forEach(block => {
-      const th = document.createElement('th');
-      th.scope = 'col';
-      th.textContent = block.label;
-      headRow.appendChild(th);
-    });
+    const tabsEl = document.getElementById('availDayTabs');
+    const panelsEl = document.getElementById('availDayPanels');
 
-    const tbody = table.querySelector('tbody');
     DAY_NAMES.forEach((dayName, dayIndex) => {
-      const tr = document.createElement('tr');
-      const labelTh = document.createElement('th');
-      labelTh.scope = 'row';
-      labelTh.className = 'avail-daylabel';
-      labelTh.textContent = dayName;
-      tr.appendChild(labelTh);
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'day-tab' + (dayIndex === 0 ? ' active' : '');
+      tab.textContent = dayName.slice(0, 3);
+      tab.setAttribute('aria-pressed', dayIndex === 0 ? 'true' : 'false');
+      tab.setAttribute('aria-label', dayName);
+      tab.addEventListener('click', () => selectAvailabilityDay(dayIndex));
+      tabsEl.appendChild(tab);
+
+      const panel = document.createElement('div');
+      panel.className = 'slot-grid avail-day-panel' + (dayIndex === 0 ? '' : ' hidden');
+      panel.dataset.dayPanel = dayIndex;
+      panel.setAttribute('role', 'group');
+      panel.setAttribute('aria-label', dayName + ' availability');
 
       TIME_BLOCKS.forEach(block => {
-        const td = document.createElement('td');
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'avail-block-btn';
+        btn.className = 'slot avail-block-btn';
+        btn.textContent = block.label;
         btn.dataset.day = dayIndex;
         btn.dataset.start = block.start;
         btn.dataset.end = block.end;
         btn.setAttribute('aria-pressed', 'false');
-        btn.setAttribute('aria-label', dayName + ' ' + block.label);
+        btn.setAttribute('aria-label', dayName + ', ' + block.label);
         btn.addEventListener('click', () => {
           btn.classList.toggle('on');
           btn.setAttribute('aria-pressed', btn.classList.contains('on') ? 'true' : 'false');
           updateAvailabilitySummary();
         });
-        td.appendChild(btn);
-        tr.appendChild(td);
+        panel.appendChild(btn);
       });
 
-      tbody.appendChild(tr);
+      panelsEl.appendChild(panel);
+    });
+  }
+
+  function selectAvailabilityDay(dayIndex){
+    document.querySelectorAll('#availDayTabs .day-tab').forEach((tab, i) => {
+      const isActive = i === dayIndex;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+    document.querySelectorAll('.avail-day-panel').forEach(panel => {
+      panel.classList.toggle('hidden', Number(panel.dataset.dayPanel) !== dayIndex);
     });
   }
 
