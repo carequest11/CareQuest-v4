@@ -315,8 +315,12 @@ html.home-lock, body.home-lock{
   /* Soft teal tint (not the same --paper-deep tan the time slots use
      below) so the day row and the time grid read as two distinct
      kinds of control at a glance, not one undifferentiated set of
-     boxes — it also pairs naturally with .day-tab.active's solid teal. */
-  padding:10px 16px; min-height:44px; border-radius:10px; border:2px solid var(--line);
+     boxes — it also pairs naturally with .day-tab.active's solid teal.
+     Border is a darker shade of that same tint (not the generic
+     --line tan every other card border uses), so the box reads as one
+     coherent teal-family control rather than a tan outline around a
+     mint fill. */
+  padding:10px 16px; min-height:44px; border-radius:10px; border:2px solid #A9CFC0;
   background:#E1F0EA; color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;
 }
 .day-tab.active{background:var(--teal); border-color:var(--teal); color:#fff;}
