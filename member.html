@@ -1909,9 +1909,10 @@ footer a:hover{color:#fff;}
     announceImpactUpdate('Entry deleted. Your total is now ' + formatHours(computeTotalHours()) + ' hours.');
   }
 
-  function QuickLinksCard({ links, exploreHref } = {}){
+  function QuickLinksCard({ links } = {}){
     const body = (links || []).map(link =>
-      '<a href="' + escapeHtml(link.href) + '" class="dg-link-row">' +
+      '<a href="' + escapeHtml(link.href) + '" class="dg-link-row"' +
+        (link.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' +
         '<div class="dg-link-icon">' + (DASH_ICONS[link.icon] || DASH_ICONS.link) + '</div>' +
         '<div class="dg-link-text">' +
           '<strong>' + escapeHtml(link.title) + '</strong>' +
@@ -1920,10 +1921,9 @@ footer a:hover{color:#fff;}
         DASH_ICONS.chevron +
       '</a>'
     ).join('');
-    const footer = '<a href="' + escapeHtml(exploreHref || '#') + '" class="btn btn-outline dg-explore-btn">Explore All Resources</a>';
     return dgCardShell({
       badgeClass: 'dg-badge-purple', icon: DASH_ICONS.link, title: 'Quick Links',
-      viewAllHref: null, body, bodyClass: 'dg-links-list', footer
+      viewAllHref: null, body, bodyClass: 'dg-links-list'
     });
   }
 
@@ -1957,10 +1957,18 @@ footer a:hover{color:#fff;}
   // My Impact's stat/note/history now come from impactHoursEntries (see
   // renderMyImpactSection above) rather than mock data — it's the one
   // card on this tab that's actually interactive.
-  const MOCK_QUICK_LINKS = [
-    { icon: 'search', title: 'Browse Opportunities', description: 'Find volunteer opportunities', href: '#' },
-    { icon: 'book', title: 'Resource Hub', description: 'Access tools and guides', href: '#' },
-    { icon: 'help', title: 'Help Center', description: 'Get support and FAQs', href: '#' }
+  //
+  // Browse Opportunities and Help Center are real destinations (a
+  // BetterImpact community search, and help-center.html); there's no
+  // Resource Hub page in this app, so that link was dropped rather than
+  // point somewhere fake.
+  const QUICK_LINKS = [
+    {
+      icon: 'search', title: 'Browse Opportunities', description: 'Find volunteer opportunities',
+      href: 'https://app.betterimpact.com/PublicEnterprise/EnterpriseSearch?EnterpriseGuid=c2ee653d-cda4-44e8-892e-25e1f885f432&SearchType=CommunityClassification&SearchId=711',
+      external: true
+    },
+    { icon: 'help', title: 'Help Center', description: 'Get support and FAQs', href: 'help-center' }
   ];
 
   // Youth-only: mounts the three components with today's data. Visibility
@@ -1975,7 +1983,7 @@ footer a:hover{color:#fff;}
     // loadImpactHours() re-renders once the real rows arrive.
     renderMyImpactSection();
     loadImpactHours();
-    mountComponent('quickLinksCardMount', QuickLinksCard, { links: MOCK_QUICK_LINKS, exploreHref: '#' });
+    mountComponent('quickLinksCardMount', QuickLinksCard, { links: QUICK_LINKS });
   }
 
   function blockKey(day, start, end){ return day + '|' + start + '|' + end; }
