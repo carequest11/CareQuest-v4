@@ -717,8 +717,37 @@ footer a:hover{color:#fff;}
     if(e.key === 'Enter') sendMsg();
   });
 
+  // Supabase can take a moment to restore a persisted session from
+  // localStorage right after a fresh page load. A bare getSession()
+  // call immediately after the client is constructed can race that
+  // restore and briefly report "no session" even when one exists —
+  // same reasoning as login.html/member.html, which wait for this
+  // same INITIAL_SESSION event before deciding to redirect rather than
+  // trusting the very first getSession() result. A getSession()
+  // fallback after a short timeout keeps this from hanging if that
+  // event is ever missed.
+  function waitForInitialSession(){
+    return new Promise(resolve => {
+      let settled = false;
+      const { data: sub } = cq.auth.onAuthStateChange((event, session) => {
+        if(event === 'INITIAL_SESSION' && !settled){
+          settled = true;
+          sub.subscription.unsubscribe();
+          resolve(session);
+        }
+      });
+      setTimeout(async () => {
+        if(settled) return;
+        settled = true;
+        sub.subscription.unsubscribe();
+        const { data: { session } } = await cq.auth.getSession();
+        resolve(session);
+      }, 2000);
+    });
+  }
+
   async function initMessages(){
-    const { data: { session } } = await cq.auth.getSession();
+    const session = await waitForInitialSession();
     if(!session){
       window.location.href = 'login';
       return;

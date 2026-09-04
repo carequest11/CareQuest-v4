@@ -630,13 +630,33 @@ footer a:hover{color:#fff;}
     </div>
 
     <div class="acct-submit-row">
-      <p>We'll email a confirmation once you submit.</p>
+      <p>Pick whichever time usually works best — the CareQuest team will follow up directly to confirm.</p>
     </div>
-    <a href="member" class="btn btn-rust acct-submit">Confirm Interview</a>
+    <a href="member" class="btn btn-rust acct-submit">Continue</a>
   </div>
 </div>
 
 <script>
+  // The four day-tab labels were hardcoded ("Mon 21", "Tue 22"...) —
+  // fine on the day this page was built, wrong (and possibly in the
+  // past) every day since. Fill them with the next four real weekdays,
+  // computed fresh on every load, instead.
+  (function(){
+    const dayAbbrevs = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const tabs = Array.from(document.querySelectorAll('.day-tab'));
+    const dates = [];
+    const cursor = new Date();
+    cursor.setDate(cursor.getDate() + 1); // start from tomorrow
+    while(dates.length < tabs.length){
+      const dow = cursor.getDay();
+      if(dow !== 0 && dow !== 6) dates.push(new Date(cursor)); // skip weekends
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    tabs.forEach((tab, i) => {
+      tab.textContent = dayAbbrevs[dates[i].getDay()] + ' ' + dates[i].getDate();
+    });
+  })();
+
   document.querySelectorAll('.day-tab').forEach(tab=>{
     tab.addEventListener('click', ()=>{
       document.querySelectorAll('.day-tab').forEach(t=>t.classList.remove('active'));
