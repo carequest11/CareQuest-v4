@@ -65,6 +65,27 @@ module.exports = async (req, res) => {
       roomUrl = null;
     }
 
+    // A cached daily_room_url only means a room existed once — rooms are
+    // created with a 30-day exp (below), and Daily deletes them once that
+    // passes. Reusing a URL to an expired/deleted room fails with "The
+    // meeting you're trying to join does not exist" for every caller,
+    // forever, since nothing ever clears the stale value. Confirming the
+    // room still exists before reuse is what makes this self-healing.
+    if (roomUrl) {
+      const roomName = roomUrl.split('/').pop();
+      const checkRes = await fetch(`https://api.daily.co/v1/rooms/${roomName}`, {
+        headers: { Authorization: `Bearer ${process.env.DAILY_API_KEY}` }
+      });
+      if (!checkRes.ok) {
+        if (checkRes.status !== 404) {
+          const detail = await checkRes.text();
+          console.error('daily-room: room-lookup request failed', checkRes.status, detail);
+        }
+        console.log('daily-room: cached room no longer exists on Daily, recreating', { matchId: match.id, roomUrl });
+        roomUrl = null;
+      }
+    }
+
     if (!roomUrl) {
       const roomRes = await fetch('https://api.daily.co/v1/rooms', {
         method: 'POST',

@@ -782,6 +782,19 @@ footer a:hover{color:#fff;}
     subscribeToMessages(currentMatchId);
   }
 
+  // daily-js rejects join() with a plain object (e.g. {errorMsg: "..."}),
+  // not a real Error — err.message is undefined for those, so the old
+  // fallback of String(err) produced the useless "[object Object]".
+  // Checks the shapes daily-js actually uses before falling back to
+  // JSON, which is at least inspectable instead of always identical.
+  function describeCallError(err){
+    if(!err) return 'Unknown error';
+    if(typeof err === 'string') return err;
+    if(err.errorMsg) return err.errorMsg;
+    if(err.message) return err.message;
+    try { return JSON.stringify(err); } catch(e){ return String(err); }
+  }
+
   async function startVideoCall(){
     if(!currentMatchId) return;
     document.getElementById('callOverlay').classList.remove('hidden');
@@ -824,7 +837,7 @@ footer a:hover{color:#fff;}
       document.getElementById('callStatus').textContent = 'Connected';
     } catch (err){
       console.error('startVideoCall failed:', err);
-      document.getElementById('callStatus').textContent = 'Could not start the video call: ' + (err && err.message ? err.message : String(err));
+      document.getElementById('callStatus').textContent = 'Could not start the video call: ' + describeCallError(err);
     }
   }
 
