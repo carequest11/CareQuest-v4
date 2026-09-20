@@ -857,7 +857,6 @@ footer a:hover{color:#fff;}
    which is exactly what made the gap after Messages look bigger than
    every other gap on this tab. */
 #panelMatch .dg-card-full{margin-bottom:0;}
-#panelMatch .inline-chat-box{min-height:110px; max-height:150px;}
 #panelMatch .avail-picker{margin-top:6px;}
 /* No compact overrides needed for .day-tabs/.day-tab/.slot-grid/.slot
    themselves — auto-fill already adapts the slot grid to however much
@@ -866,6 +865,20 @@ footer a:hover{color:#fff;}
 #panelMatch .avail-summary{margin-top:6px; font-size:13px;}
 @media (min-width:1024px){
   #panelMatch{max-height:calc(100vh - 170px); overflow-y:auto;}
+  /* Only crank the chat box down this small where #panelMatch itself
+     is also height-capped just above — that's the only context where
+     shrinking it actually buys anything (fitting the whole tab in one
+     screen). Below 1024px the page scrolls normally already, so this
+     was buying nothing while quietly breaking the box for almost any
+     real conversation: two short messages (~65px each + 12px gap)
+     already exceed a 150px cap, forcing a scroll-to-bottom on every
+     load that visually crops the top message's meta label right at
+     the box's edge — reading as broken/overlapping, not as a normal
+     "older messages scrolled out of view" chat pattern. Below this
+     width it now inherits the base .inline-chat-box's generous
+     220px/360px min/max instead, so that only kicks in for genuinely
+     long threads, where it's expected. */
+  #panelMatch .inline-chat-box{min-height:110px; max-height:150px;}
 }
 @media (max-width:900px){
   /* Single column: DOM order is already the natural top-to-bottom
@@ -895,7 +908,14 @@ footer a:hover{color:#fff;}
 #seniorMemberView .dg-card-head{margin-bottom:6px;}
 #seniorMemberView .dg-card-sub{margin-bottom:6px;}
 #seniorMemberView .dg-card-full{margin-bottom:0;}
-#seniorMemberView .inline-chat-box{min-height:110px; max-height:150px;}
+/* Unlike #panelMatch (youth), #seniorMemberView is never height-capped
+   at any width — there's no "fit the whole tab in one screen" goal
+   here for a tiny chat box to serve. It was still shrunk to
+   110/150px when this compact styling was mirrored over, which broke
+   it the same way youth's did: two short messages already exceed a
+   150px cap, forcing scroll-to-bottom on every load and visually
+   cropping the top message's meta label at the box's edge. Removed —
+   inherits the base .inline-chat-box's 220px/360px min/max instead. */
 #seniorMemberView .avail-picker{margin-top:6px;}
 #seniorMemberView .avail-summary{margin-top:6px; font-size:13px;}
 
