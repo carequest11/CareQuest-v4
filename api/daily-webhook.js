@@ -88,6 +88,22 @@ function matchIdFromRoomName(roomName) {
   return UUID_RE.test(id) ? id : null;
 }
 
+// Daily does not document the unit of X-Webhook-Timestamp, and it does
+// not match the rest of the API: `event_ts` and `start_ts` are both
+// documented as epoch *seconds*, but the header arrives in
+// milliseconds (13 digits). Normalising by magnitude is correct
+// whichever one Daily sends, rather than betting on an undocumented
+// format staying put — 1e11 seconds is the year 5138 and 1e11 ms is
+// 1973, so nothing real is ambiguous.
+//
+// This is only for the replay window. The signature is always computed
+// over the header string exactly as received, never a normalised form.
+function timestampToMs(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n > 1e11 ? n : n * 1000;
+}
+
 function toTimestamp(seconds) {
   const n = Number(seconds);
   return Number.isFinite(n) && n > 0 ? new Date(n * 1000).toISOString() : null;
@@ -187,9 +203,12 @@ module.exports = async (req, res) => {
     }
 
     // Reject replays of an old, validly-signed request.
-    const ageSeconds = Math.abs(Date.now() / 1000 - Number(timestamp));
-    if (!Number.isFinite(ageSeconds) || ageSeconds > 300) {
-      console.error('daily-webhook: rejected stale request', { timestamp });
+    const sentAtMs = timestampToMs(timestamp);
+    if (sentAtMs === null || Math.abs(Date.now() - sentAtMs) > 5 * 60 * 1000) {
+      console.error('daily-webhook: rejected stale request', {
+        timestamp,
+        ageSeconds: sentAtMs === null ? null : Math.round((Date.now() - sentAtMs) / 1000)
+      });
       res.status(401).json({ error: 'Stale request' });
       return;
     }
@@ -206,12 +225,26 @@ module.exports = async (req, res) => {
     const dailyRecordingId = payload.recording_id;
 
     if (!matchId || !dailyRecordingId) {
-      console.error('daily-webhook: event is not for a CareQuest match room', {
-        type,
-        roomName: payload.room_name,
-        recordingId: dailyRecordingId
-      });
-      res.status(200).json({ ok: true, ignored: 'unrecognised room' });
+      // recording.started's documented payload carries no room_name
+      // (only action/recording_id/layout/started_by/instance_id/
+      // start_ts), so there's nothing to map it to a match with. That's
+      // expected, not a fault: recording.ready-to-download does carry
+      // room_name and writes the row a few seconds later. A *present*
+      // room_name we don't recognise is a different matter — that's
+      // someone else's room on the same Daily domain.
+      if (!payload.room_name) {
+        console.log('daily-webhook: no room_name on this event, waiting for ready-to-download', {
+          type,
+          recordingId: dailyRecordingId
+        });
+      } else {
+        console.warn('daily-webhook: event is not for a CareQuest match room', {
+          type,
+          roomName: payload.room_name,
+          recordingId: dailyRecordingId
+        });
+      }
+      res.status(200).json({ ok: true, ignored: 'unmapped room' });
       return;
     }
 
@@ -236,7 +269,10 @@ module.exports = async (req, res) => {
     if (type === 'recording.ready-to-download') {
       const duration = Number(payload.duration);
       if (Number.isFinite(duration) && duration >= 0) row.duration = Math.round(duration);
-      row.download_path = payload.s3key || dailyRecordingId;
+      // Daily's field is s3_key, not s3key — an earlier spelling here
+      // meant download_path silently fell back to the recording id for
+      // every recording, losing where the file actually landed.
+      row.download_path = payload.s3_key || dailyRecordingId;
     }
 
     const { error } = await supabaseAdmin
