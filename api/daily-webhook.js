@@ -26,6 +26,11 @@
 // If the secret isn't set yet, the handler accepts the unverified
 // validation ping (and only that) so the webhook can still be created;
 // see the comment on that branch below.
+//
+// Note Daily signs the re-serialised JSON rather than the raw request
+// bytes — see the comment on computeSignature. Do not "fix" this back
+// to reading the raw stream: on Vercel the body is already parsed, the
+// stream is drained, and reading it hangs the function until timeout.
 const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -34,28 +39,39 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// @vercel/node exposes req.body as a lazy getter: as long as nothing
-// touches it first, the request stream is still unread and we can get
-// the exact bytes Daily signed. Re-serialising a parsed object would
-// not reproduce them (key order, whitespace), so raw is the only way
-// the signature can be checked at all.
-function readRawBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on('data', (c) => chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)));
-    req.on('end', () => resolve(Buffer.concat(chunks)));
-    req.on('error', reject);
-  });
+// Unlike most providers, Daily does NOT sign the raw request bytes —
+// its documented verification is over the *re-serialised* JSON:
+//
+//   let signature = headers['X-Webhook-Timestamp'] + '.' + JSON.stringify(event);
+//   const hmac = crypto.createHmac('sha256', Buffer.from(hmacSecret, 'base64'));
+//   let computed_signature = hmac.update(signature).digest('base64');
+//
+// So the parsed body is exactly what we need, and @vercel/node having
+// already parsed it is fine rather than a problem. An earlier version
+// of this file read the request stream instead, to get raw bytes: on
+// Vercel that stream is already drained, so 'end' never fired, the
+// handler hung, and Daily saw a timeout instead of a 200.
+function readEvent(req) {
+  const body = req.body;
+  if (body == null) return null;
+  if (Buffer.isBuffer(body)) return JSON.parse(body.toString('utf8'));
+  if (typeof body === 'string') return JSON.parse(body);
+  if (typeof body === 'object') return body;
+  return null;
 }
 
-function signatureIsValid(rawBody, timestamp, signature) {
+function computeSignature(secret, timestamp, event) {
+  return crypto
+    .createHmac('sha256', Buffer.from(secret, 'base64'))
+    .update(`${timestamp}.${JSON.stringify(event)}`)
+    .digest('base64');
+}
+
+function signatureIsValid(event, timestamp, signature) {
   const secret = process.env.DAILY_WEBHOOK_SECRET;
   if (!secret || !timestamp || !signature) return false;
 
-  const expected = crypto
-    .createHmac('sha256', Buffer.from(secret, 'base64'))
-    .update(`${timestamp}.${rawBody.toString('utf8')}`)
-    .digest('base64');
+  const expected = computeSignature(secret, timestamp, event);
 
   const a = Buffer.from(expected);
   const b = Buffer.from(String(signature));
@@ -92,21 +108,43 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const rawBody = await readRawBody(req);
     const timestamp = req.headers['x-webhook-timestamp'];
     const signature = req.headers['x-webhook-signature'];
 
-    // Parsed before the signature is checked, because telling Daily's
-    // one-off validation ping apart from a real event delivery needs
-    // the body. Nothing here acts on the contents until the signature
-    // has been verified below.
     let event;
     try {
-      event = JSON.parse(rawBody.toString('utf8'));
+      event = readEvent(req);
     } catch (e) {
+      event = null;
+    }
+
+    if (!event || typeof event !== 'object') {
+      console.error('daily-webhook: could not read a JSON body', {
+        contentType: req.headers['content-type'],
+        bodyType: typeof req.body,
+        isBuffer: Buffer.isBuffer(req.body)
+      });
       res.status(400).json({ error: 'Malformed JSON' });
       return;
     }
+
+    // TEMPORARY DIAGNOSTICS — remove once the webhook is delivering.
+    // Logs enough to tell the three failure modes apart (secret not
+    // reaching the runtime / header missing / signature mismatch)
+    // without putting the secret or a full valid signature in the logs.
+    const secretForLog = process.env.DAILY_WEBHOOK_SECRET;
+    console.log('daily-webhook: inbound', {
+      type: event.type || '(validation ping)',
+      secretConfigured: Boolean(secretForLog),
+      secretLength: secretForLog ? secretForLog.length : 0,
+      hasTimestampHeader: Boolean(timestamp),
+      hasSignatureHeader: Boolean(signature),
+      receivedSignature: signature ? String(signature).slice(0, 16) + '…' : null,
+      computedSignature: secretForLog && timestamp
+        ? computeSignature(secretForLog, timestamp, event).slice(0, 16) + '…'
+        : null,
+      signedStringLength: timestamp ? `${timestamp}.${JSON.stringify(event)}`.length : 0
+    });
 
     const type = event.type;
     const payload = event.payload || {};
@@ -117,7 +155,7 @@ module.exports = async (req, res) => {
     // `type`, which is what distinguishes it from a real delivery.
     const isValidationPing = !type;
 
-    if (!signatureIsValid(rawBody, timestamp, signature)) {
+    if (!signatureIsValid(event, timestamp, signature)) {
       // Daily's validation ping *is* signed — but if you let Daily
       // generate the hmac, the only copy of that secret comes back in
       // the create-webhook response, which hasn't happened yet when the
@@ -220,5 +258,3 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: 'Unexpected server error' });
   }
 };
-
-module.exports.config = { api: { bodyParser: false } };
