@@ -6,6 +6,11 @@
 // mints a short-lived meeting token. The DAILY_API_KEY never reaches
 // the browser.
 const { createClient } = require('@supabase/supabase-js');
+const {
+  RECORDING_ROOM_PROPERTIES,
+  roomIsRecording,
+  buildMeetingTokenProperties
+} = require('../lib/recordingConfig.js');
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
@@ -18,30 +23,6 @@ const supabaseAdmin = createClient(
 // daily-js can join.
 function isFullRoomUrl(value) {
   return typeof value === 'string' && /^https?:\/\//i.test(value);
-}
-
-// Every call is cloud-recorded for safeguarding, and the recording
-// starts on its own as soon as someone joins — nobody on the call has
-// to (or gets to) press record. /api/daily-webhook turns the resulting
-// recording.* events into public.call_recordings rows.
-//
-// The two halves live on different objects, which is easy to get wrong:
-//   - enable_recording: 'cloud' is a ROOM property — it permits cloud
-//     recording at all.
-//   - start_cloud_recording: true is a MEETING TOKEN property — it is
-//     what actually starts the recording when that token's holder
-//     joins. Daily starts a cloud recording only via an owner clicking
-//     Record, or a token carrying this flag.
-//
-// Putting start_cloud_recording in the room config (as this once did)
-// is rejected by Daily and leaves the room un-patchable.
-const RECORDING_ROOM_PROPERTIES = {
-  enable_recording: 'cloud'
-};
-
-function roomIsRecording(room) {
-  const cfg = (room && room.config) || {};
-  return cfg.enable_recording === 'cloud';
 }
 
 module.exports = async (req, res) => {
@@ -268,22 +249,10 @@ module.exports = async (req, res) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        properties: {
-          room_name: roomUrl.split('/').pop(),
-          user_id: uid,
-          exp: Math.floor(Date.now() / 1000) + 60 * 60 * 2,
-          // This is what actually starts the recording, the moment
-          // either person joins. It requires the room's
-          // enable_recording: 'cloud', checked above.
-          start_cloud_recording: true
-          // Deliberately NOT setting enable_recording: false here. It
-          // reads like "stop them turning recording off", but it
-          // contradicts the line above — start_cloud_recording needs
-          // enable_recording to be 'cloud' on the room or the token —
-          // and it stopped recording from ever starting. Participants
-          // can't stop a recording anyway: only owners get the Record
-          // control, and these tokens don't set is_owner.
-        }
+        properties: buildMeetingTokenProperties({
+          roomName: roomUrl.split('/').pop(),
+          userId: uid
+        })
       })
     });
 
@@ -311,3 +280,4 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: 'Unexpected server error', detail: err.message });
   }
 };
+

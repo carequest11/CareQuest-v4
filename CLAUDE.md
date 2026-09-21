@@ -23,6 +23,7 @@ There is no way for you to execute SQL against the live Supabase project from th
 ## Commands
 
 - `npm install` — installs `@supabase/supabase-js` for the `/api` functions and `scripts/verify-schema.js`. Not needed to view/edit the HTML pages themselves.
+- `DAILY_API_KEY=... node scripts/verify-recording-token.js` — creates a throwaway room, mints a meeting token with the real `lib/recordingConfig.js` properties, and asserts from the token's decoded JWT claims that recording auto-starts and that neither participant can start or stop it. Deletes the room afterwards.
 - `node scripts/verify-schema.js` — one-off sanity check that confirms `youth_profiles`, `senior_profiles`, and `matches` exist and are reachable in the connected Supabase project (connects with the public URL + publishable key, same as the browser).
 - No lint, build, or test scripts exist in this repo.
 - Deployment is via Vercel, triggered by pushing to `main` (`vercel.json` sets `cleanUrls: true`, so every internal link is extension-less, e.g. `href="login"` not `href="login.html"` — preserve this when adding pages or links).
@@ -79,7 +80,18 @@ The only place secrets (`SUPABASE_SERVICE_ROLE_KEY`, `DAILY_API_KEY`) are used �
 
 ### Call recording (safeguarding)
 
-Every video call is cloud-recorded by Daily. **The two halves of that live on different Daily objects and it's easy to get wrong:** `enable_recording: 'cloud'` is a **room** property (it permits recording), while `start_cloud_recording: true` is a **meeting token** property (it's what actually starts the recording when that token's holder joins). Putting `start_cloud_recording` in the room config makes Daily reject the room update. Don't set `enable_recording: false` on the token to stop participants halting a recording either — it contradicts `start_cloud_recording` and prevents recording starting at all; participants can't stop a recording anyway, since only owners get the Record control and these tokens don't set `is_owner`.
+Every video call is cloud-recorded by Daily. All of the Daily-side configuration lives in `lib/recordingConfig.js` (outside `api/` so `scripts/verify-recording-token.js` can import it without needing Supabase credentials).
+
+**The two halves live on different Daily objects and it's easy to get wrong:** `enable_recording: 'cloud'` is a **room** property (it permits recording), while `start_cloud_recording: true` is a **meeting token** property (it's what actually starts the recording when that token's holder joins). Putting `start_cloud_recording` in the room config makes Daily reject the room update.
+
+**Neither participant may start or stop a recording**, which takes three things — don't remove any of them thinking the others cover it:
+- `enable_recording_ui: false` hides Prebuilt's Record button. **Cosmetic on its own** — the underlying `startRecording()`/`stopRecording()` would still be permitted from a console.
+- `permissions.canAdmin: []` is the actual denial; recording/streaming control lives under the `'streaming'` admin permission. `hasPresence` and `canSend` are set explicitly alongside it so supplying a `permissions` object can't narrow the participant's ability to send audio/video.
+- `is_owner` stays unset — owners get recording control regardless of the above.
+
+Don't set `enable_recording: false` on the token: it isn't a valid value (the token accepts `'cloud' | 'cloud-audio-only' | 'local' | 'raw-tracks'`), and it contradicts `start_cloud_recording`, which needs `enable_recording` to be `'cloud'`. An earlier version set it and stopped recordings from starting at all.
+
+Verify token permissions with `node scripts/verify-recording-token.js` (needs `DAILY_API_KEY`) — it decodes the minted token's JWT claims and cross-checks Daily's own reading of them, because a hidden button is not a denied permission.
 
 `daily-room.js` verifies an existing room actually has `enable_recording: 'cloud'` before reusing it, patches it if not (re-reading Daily's returned config rather than trusting a 200), and deletes + recreates the room if the patch won't take. A call that can't be recorded is refused rather than run unrecorded.
 
