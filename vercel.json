@@ -1,3 +1,6 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "crons": [
+    { "path": "/api/purge-recordings", "schedule": "0 4 * * *" }
+  ]
 }

@@ -611,6 +611,36 @@ footer a:hover{color:#fff;}
 .call-btn:hover{background:rgba(255,255,255,.22);}
 .call-btn.end:hover{background:#8f3a24;}
 
+/* Recording notice. Sits above the video rather than on top of it so
+   it can never be mistaken for part of the Daily iframe's own chrome,
+   and so it never covers a control — it has to stay readable for the
+   whole call, at a size an older user can read across the room. */
+.call-recording-banner{
+  width:min(720px,90vw); box-sizing:border-box;
+  display:flex; align-items:center; gap:14px;
+  margin-bottom:14px; padding:16px 20px;
+  background:#B3301A; color:#fff; border-radius:14px;
+  font-size:19px; font-weight:700; line-height:1.35;
+}
+.call-recording-dot{
+  width:18px; height:18px; border-radius:50%; background:#fff; flex:none;
+  animation:callRecPulse 1.6s ease-in-out infinite;
+}
+@keyframes callRecPulse{0%,100%{opacity:1;} 50%{opacity:.3;}}
+@media (prefers-reduced-motion:reduce){ .call-recording-dot{animation:none;} }
+@media (max-width:600px){ .call-recording-banner{font-size:17px; padding:14px 16px;} }
+
+/* Recording consent prompt inside the Calling card, for accounts
+   created before consent was collected at signup. */
+.consent-block{
+  margin-top:16px; padding:18px; border-radius:14px;
+  background:#FDF4EF; border:2px solid var(--rust);
+}
+.consent-block p{font-size:17px; line-height:1.55; margin:0 0 14px;}
+.consent-check{display:flex; gap:12px; align-items:flex-start; margin-bottom:16px; cursor:pointer;}
+.consent-check input{width:26px; height:26px; flex:none; margin-top:2px; accent-color:var(--teal);}
+.consent-check span{font-size:17px; line-height:1.5; font-weight:600;}
+
 /* ===================================================
    AVAILABILITY GRID + VISIT SCHEDULING (member page)
 =================================================== */
@@ -1247,14 +1277,29 @@ footer a:hover{color:#fff;}
           <div class="dg-badge dg-badge-rose" id="callBadgeIcon"></div>
           <h3 class="dg-card-title">Calling</h3>
         </div>
-        <p class="dg-card-sub">Start a face-to-face video call with your match.</p>
+        <p class="dg-card-sub">Start a face-to-face video call with your match. Calls are recorded for safety.</p>
         <button type="button" class="btn btn-primary" id="startCallBtn">Start Video Call</button>
+        <p class="dg-card-sub hidden" id="callConsentWaiting" style="margin-top:14px;"></p>
+
+        <div class="consent-block hidden" id="callConsentBlock">
+          <p><strong>Before your first call:</strong> CareQuest records video calls so there is a record if a concern is ever raised. Recordings are stored securely, are only viewed by CareQuest staff if someone raises a concern, and are deleted automatically after the retention period. Your match cannot see them, and neither can you.</p>
+          <label class="consent-check" for="callConsentCheck">
+            <input type="checkbox" id="callConsentCheck">
+            <span>I understand my video calls will be recorded, and I agree to it.</span>
+          </label>
+          <button type="button" class="btn btn-primary" id="callConsentBtn" disabled>Agree &amp; Continue</button>
+          <p class="field-error hidden" id="callConsentError" style="margin-top:12px;"></p>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <div class="call-overlay hidden" id="callOverlay">
+  <div class="call-recording-banner" role="status">
+    <span class="call-recording-dot" aria-hidden="true"></span>
+    <span>Recording — this call is being recorded for everyone's safety.</span>
+  </div>
   <div class="call-stage">
     <div id="dailyCallContainer" style="position:absolute; inset:0; border-radius:20px; overflow:hidden;"></div>
   </div>
@@ -1547,6 +1592,55 @@ footer a:hover{color:#fff;}
   // ---------------------------------------------------------
   let dailyCallFrame = null;
 
+  // Recording consent. Calls are recorded, so neither person can call
+  // until both have agreed — /api/daily-room is what actually enforces
+  // that; this only decides which explanation the Calling card shows,
+  // and gives accounts created before signup collected consent a way
+  // to give it.
+  async function refreshRecordingConsent(){
+    if(!currentMatchId) return;
+    const startBtn = document.getElementById('startCallBtn');
+    const block = document.getElementById('callConsentBlock');
+    const waiting = document.getElementById('callConsentWaiting');
+
+    const { data, error } = await cq.rpc('match_recording_consent', { p_match_id: currentMatchId });
+    if(error || !data || !data[0]){
+      console.error('match_recording_consent failed:', error);
+      return;
+    }
+
+    const mine = data[0].self_consented;
+    const theirs = data[0].partner_consented;
+
+    block.classList.toggle('hidden', mine);
+    waiting.classList.toggle('hidden', !(mine && !theirs));
+    if(mine && !theirs){
+      waiting.textContent = 'You can call once ' + (partnerNameGlobal || 'your match') + ' has also agreed to call recording.';
+    }
+    startBtn.disabled = !(mine && theirs);
+  }
+
+  async function submitRecordingConsent(){
+    const btn = document.getElementById('callConsentBtn');
+    const errEl = document.getElementById('callConsentError');
+    errEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    const { error } = await cq.rpc('record_recording_consent');
+    btn.textContent = 'Agree & Continue';
+
+    if(error){
+      console.error('record_recording_consent failed:', error);
+      errEl.textContent = 'Could not save your agreement. Please try again.';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      return;
+    }
+
+    await refreshRecordingConsent();
+  }
+
   // daily-js rejects join() with a plain object (e.g. {errorMsg: "..."}),
   // not a real Error — err.message is undefined for those, so the old
   // fallback of String(err) produced the useless "[object Object]".
@@ -1578,6 +1672,16 @@ footer a:hover{color:#fff;}
       const data = await res.json();
 
       if(!res.ok){
+        // Consent is the one failure that has a fix the user can act
+        // on, and the fix lives back in the Calling card — so close the
+        // call overlay and let refreshRecordingConsent put the right
+        // prompt in front of them instead of stranding them on a dark
+        // screen with an error.
+        if(data.code === 'recording_consent_required'){
+          document.getElementById('callOverlay').classList.add('hidden');
+          await refreshRecordingConsent();
+          return;
+        }
         document.getElementById('callStatus').textContent = data.error || 'Could not start the video call.';
         return;
       }
@@ -2606,6 +2710,10 @@ footer a:hover{color:#fff;}
   document.getElementById('editProfileForm').addEventListener('submit', saveProfileDetails);
   document.getElementById('startCallBtn').addEventListener('click', startVideoCall);
   document.getElementById('endCallBtn').addEventListener('click', endVideoCall);
+  document.getElementById('callConsentCheck').addEventListener('change', (e) => {
+    document.getElementById('callConsentBtn').disabled = !e.target.checked;
+  });
+  document.getElementById('callConsentBtn').addEventListener('click', submitRecordingConsent);
   document.getElementById('logHoursForm').addEventListener('submit', handleLogHoursSubmit);
   document.getElementById('logHoursCancelBtn').addEventListener('click', closeLogHoursModal);
   document.getElementById('logHoursModalCloseBtn').addEventListener('click', closeLogHoursModal);
@@ -2773,6 +2881,7 @@ footer a:hover{color:#fff;}
         }
       }
 
+      await refreshRecordingConsent();
       await refreshUpcomingVisit();
       await loadRecentMessages(currentMatchId);
       subscribeToInlineMessages(currentMatchId);

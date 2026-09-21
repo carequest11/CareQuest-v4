@@ -72,7 +72,22 @@ Everyone is currently assumed to be in `America/Vancouver`; all scheduling times
 
 The only place secrets (`SUPABASE_SERVICE_ROLE_KEY`, `DAILY_API_KEY`) are used — see `.env.example` for the full env var list. Plain Node/CommonJS (`module.exports = async (req, res) => {...}`), not Next.js API routes.
 - `create-profile.js` — inserts a `youth_profiles`/`senior_profiles` row right after `auth.signUp()`, using the service role so it works even before the user's email is confirmed (RLS would otherwise block the insert until then).
-- `daily-room.js` — creates/reuses a private Daily.co room per match and mints a short-lived meeting token for video calls, after verifying the caller is actually a participant in that match.
+- `daily-room.js` — creates/reuses a private Daily.co room per match and mints a short-lived meeting token for video calls, after verifying the caller is actually a participant in that match, and that both participants have consented to recording.
+- `daily-webhook.js` — receives Daily's `recording.started` / `recording.ready-to-download` events and writes `call_recordings` rows. Public endpoint, so it verifies Daily's HMAC signature over the **raw** request body before trusting anything (which is why it reads the request stream itself and never touches `req.body`).
+- `recording-access.js` — the only route to play back a recording: staff accounts only, and it writes the `recording_access_log` row *before* minting Daily's access link.
+- `purge-recordings.js` — deletes recordings past `expires_at` from Daily and from the DB. Authorised by `CRON_SECRET`; scheduled by the `crons` entry in `vercel.json`.
+
+### Call recording (safeguarding)
+
+Every video call is cloud-recorded by Daily. The room is created with `enable_recording: 'cloud'` + `start_cloud_recording: true` so recording starts by itself, and each meeting token sets `enable_recording: false` so neither participant can stop it mid-call. `daily-room.js` also patches rooms created before this existed, and fails the call outright rather than letting it proceed unrecorded.
+
+Room names are `cq-match-<match id>` — that naming is the only link from a Daily webhook event back to a match, so don't change it without updating `daily-webhook.js`.
+
+**Recordings are staff-only.** `call_recordings` has a select policy for `is_staff()` and no policy at all for participants, plus no insert/update/delete policy for anyone (only the service role writes it). Participants cannot list or download their own recordings by design. Every staff playback writes a `recording_access_log` row; that table is append-only via the service role, so staff can neither forge nor delete their own audit entries, and its `recording_id` FK is `on delete set null` with `daily_recording_id` snapshotted as text so the audit trail survives a purge.
+
+**Consent** is a `recording_consent_at` timestamp on both profile tables — null means no calls, enforced in `daily-room.js`, not just the UI. It's collected by an optional checkbox at signup and, for accounts predating this, by the prompt in `member.html`'s Calling card (`record_recording_consent()` RPC). `match_recording_consent(match_id)` is the narrow SECURITY DEFINER read that lets the UI say *whose* consent is missing without exposing the partner's profile.
+
+**Retention** lives in the single-row `recording_settings` table and is applied when the row is first written (`expires_at = started_at + retention_days`), so changing it only affects new recordings — the backfill SQL to re-apply it to existing rows is in the header comment of `purge-recordings.js`. The "deleted automatically after 30 days" wording appears in `youth-account.html`, `senior-account.html` and `member.html`; if `retention_days` changes, update all three.
 
 ### Auth flow and redirect-loop hardening
 

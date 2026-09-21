@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { role, userId, profile } = req.body || {};
+    const { role, userId, profile, recordingConsent } = req.body || {};
 
     if (role !== 'youth' && role !== 'senior') {
       res.status(400).json({ error: 'Invalid role' });
@@ -46,6 +46,15 @@ module.exports = async (req, res) => {
     const row = { id: userId };
     for (const key of allowed) {
       if (profile[key] !== undefined && profile[key] !== '') row[key] = profile[key];
+    }
+
+    // Consent to call recording. The timestamp is taken here rather
+    // than sent by the client, so what's stored is when the server
+    // recorded the agreement, not whatever the browser's clock said.
+    // Left null when the box wasn't ticked — that's a valid state, it
+    // just means /api/daily-room won't let this person on a call yet.
+    if (recordingConsent === true) {
+      row.recording_consent_at = new Date().toISOString();
     }
 
     const { error: insertErr } = await supabaseAdmin.from(table).insert(row);

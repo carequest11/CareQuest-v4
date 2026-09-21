@@ -20,6 +20,20 @@ function isFullRoomUrl(value) {
   return typeof value === 'string' && /^https?:\/\//i.test(value);
 }
 
+// Every call is cloud-recorded for safeguarding, and the recording
+// starts on its own as soon as someone joins — nobody on the call has
+// to (or gets to) press record. /api/daily-webhook turns the resulting
+// recording.* events into public.call_recordings rows.
+const RECORDING_ROOM_PROPERTIES = {
+  enable_recording: 'cloud',
+  start_cloud_recording: true
+};
+
+function roomIsRecording(room) {
+  const cfg = (room && room.config) || {};
+  return cfg.enable_recording === 'cloud' && cfg.start_cloud_recording === true;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -58,6 +72,34 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // Calls are recorded, so nobody joins one until *both* people have
+    // agreed to that. This is the real gate — the client-side check in
+    // member.html only exists to explain the situation nicely, and a
+    // caller who skips it still can't get a meeting token from here.
+    const [youthRow, seniorRow] = await Promise.all([
+      supabaseAdmin.from('youth_profiles').select('recording_consent_at').eq('id', match.youth_id).maybeSingle(),
+      supabaseAdmin.from('senior_profiles').select('recording_consent_at').eq('id', match.senior_id).maybeSingle()
+    ]);
+
+    const selfConsented = uid === match.youth_id
+      ? Boolean(youthRow.data?.recording_consent_at)
+      : Boolean(seniorRow.data?.recording_consent_at);
+    const partnerConsented = uid === match.youth_id
+      ? Boolean(seniorRow.data?.recording_consent_at)
+      : Boolean(youthRow.data?.recording_consent_at);
+
+    if (!selfConsented || !partnerConsented) {
+      res.status(403).json({
+        error: !selfConsented
+          ? 'You need to agree to call recording before you can start a call.'
+          : 'Your match hasn’t agreed to call recording yet.',
+        code: 'recording_consent_required',
+        selfConsented,
+        partnerConsented
+      });
+      return;
+    }
+
     let roomUrl = match.daily_room_url;
 
     if (roomUrl && !isFullRoomUrl(roomUrl)) {
@@ -83,6 +125,30 @@ module.exports = async (req, res) => {
         }
         console.log('daily-room: cached room no longer exists on Daily, recreating', { matchId: match.id, roomUrl });
         roomUrl = null;
+      } else {
+        // Rooms created before recording was added are still perfectly
+        // joinable, so the check above happily reuses them — and they'd
+        // silently never record. Patching the existing room is what
+        // makes every match converge on recording without waiting for
+        // its 30-day exp to lapse.
+        const existingRoom = await checkRes.json();
+        if (!roomIsRecording(existingRoom)) {
+          const patchRes = await fetch(`https://api.daily.co/v1/rooms/${roomName}`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${process.env.DAILY_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ properties: RECORDING_ROOM_PROPERTIES })
+          });
+          if (!patchRes.ok) {
+            const detail = await patchRes.text();
+            console.error('daily-room: could not enable recording on existing room', patchRes.status, detail);
+            res.status(502).json({ error: 'Could not enable call recording for this room', detail });
+            return;
+          }
+          console.log('daily-room: enabled recording on pre-existing room', { matchId: match.id, roomUrl });
+        }
       }
     }
 
@@ -98,7 +164,8 @@ module.exports = async (req, res) => {
           privacy: 'private',
           properties: {
             enable_chat: true,
-            exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30
+            exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30,
+            ...RECORDING_ROOM_PROPERTIES
           }
         })
       });
@@ -119,6 +186,19 @@ module.exports = async (req, res) => {
         return;
       }
 
+      // Daily silently drops enable_recording on plans/domains where
+      // cloud recording isn't turned on, so the room comes back looking
+      // fine and simply never records. Failing loudly here beats
+      // discovering months later that there's nothing to review.
+      if (!roomIsRecording(room)) {
+        console.error('daily-room: room created without cloud recording', room.config);
+        res.status(502).json({
+          error: 'Call recording is not enabled on this Daily.co domain, so the call was not started.',
+          detail: JSON.stringify(room.config || {})
+        });
+        return;
+      }
+
       roomUrl = room.url;
 
       await supabaseAdmin.from('matches').update({ daily_room_url: roomUrl }).eq('id', match.id);
@@ -134,7 +214,12 @@ module.exports = async (req, res) => {
         properties: {
           room_name: roomUrl.split('/').pop(),
           user_id: uid,
-          exp: Math.floor(Date.now() / 1000) + 60 * 60 * 2
+          exp: Math.floor(Date.now() / 1000) + 60 * 60 * 2,
+          // The room auto-starts its own recording; this only governs
+          // what *this participant* may do about it. false hides the
+          // record control, so neither person can stop the recording
+          // partway through a call they'd rather wasn't reviewable.
+          enable_recording: false
         }
       })
     });
@@ -150,8 +235,8 @@ module.exports = async (req, res) => {
     }
 
     const tokenData = await tokenRes.json();
-    const responseBody = { url: roomUrl, token: tokenData.token };
-    console.log('daily-room: returning', responseBody);
+    const responseBody = { url: roomUrl, token: tokenData.token, recording: true };
+    console.log('daily-room: returning room for match', match.id);
     res.status(200).json(responseBody);
   } catch (err) {
     console.error('daily-room: unexpected error', err);

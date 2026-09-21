@@ -538,3 +538,195 @@ create policy "youth can delete own impact hours"
 
 alter table public.youth_profiles add column if not exists languages text;
 alter table public.senior_profiles add column if not exists languages text;
+
+-- =========================================================
+-- Call recording (safeguarding)
+--
+-- Video calls are recorded by Daily.co so that a recording exists
+-- if a safeguarding concern is later raised. Recordings are never
+-- visible to the two people on the call — only to staff, and every
+-- staff view is logged.
+--
+-- Run just this section if everything above is already applied.
+-- =========================================================
+
+-- Recording consent, captured at signup. NULL = has not consented,
+-- which blocks that user from starting or joining a call at all
+-- (enforced server-side in /api/daily-room, not just in the UI).
+-- A timestamp rather than a boolean so we can always answer "when
+-- did this person agree, and to which version of the wording?".
+alter table public.youth_profiles add column if not exists recording_consent_at timestamptz;
+alter table public.senior_profiles add column if not exists recording_consent_at timestamptz;
+
+-- How long a recording is kept before /api/purge-recordings deletes
+-- it from both Daily and this table. Single-row table (the `id`
+-- boolean primary key with a `check (id)` allows exactly one row) so
+-- the retention period is a configuration value an admin can change
+-- in the SQL editor without a redeploy.
+create table if not exists public.recording_settings (
+  id boolean primary key default true check (id),
+  retention_days int not null default 30 check (retention_days between 1 and 3650),
+  updated_at timestamptz not null default now()
+);
+
+insert into public.recording_settings (id) values (true) on conflict (id) do nothing;
+
+alter table public.recording_settings enable row level security;
+
+drop policy if exists "staff can read recording settings" on public.recording_settings;
+create policy "staff can read recording settings"
+  on public.recording_settings for select
+  using (public.is_staff());
+
+-- No insert/update/delete policy: change the retention period by
+-- running this in the SQL editor (service role bypasses RLS):
+--   update public.recording_settings
+--      set retention_days = 60, updated_at = now()
+--    where id;
+
+-- One row per cloud recording Daily produces, written only by the
+-- /api/daily-webhook serverless function using the service role.
+create table if not exists public.call_recordings (
+  id uuid primary key default gen_random_uuid(),
+  match_id uuid not null references public.matches (id) on delete cascade,
+  daily_recording_id text not null unique,
+  started_at timestamptz not null,
+  -- Length in seconds. Null until Daily fires recording.ready-to-download;
+  -- the earlier recording.started event doesn't know it yet.
+  duration int check (duration >= 0),
+  download_path text,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists call_recordings_match_id_started_at_idx
+  on public.call_recordings (match_id, started_at desc);
+
+create index if not exists call_recordings_expires_at_idx
+  on public.call_recordings (expires_at);
+
+alter table public.call_recordings enable row level security;
+
+-- Staff only. The two people on the call have no policy here at all,
+-- so they cannot list their own recordings, let alone anyone else's —
+-- and since there is no policy granting insert/update/delete to
+-- anyone, rows can only be written by the service role.
+drop policy if exists "only staff can read recordings" on public.call_recordings;
+create policy "only staff can read recordings"
+  on public.call_recordings for select
+  using (public.is_staff());
+
+-- Audit trail: one row per time a staff account obtains a playback
+-- link for a recording, written by /api/recording-access.
+create table if not exists public.recording_access_log (
+  id uuid primary key default gen_random_uuid(),
+  -- Nulled rather than cascade-deleted when a recording is purged: an
+  -- audit trail has to outlive the thing it describes, which is also
+  -- why daily_recording_id is snapshotted here as plain text.
+  recording_id uuid references public.call_recordings (id) on delete set null,
+  daily_recording_id text not null,
+  match_id uuid,
+  staff_user_id uuid not null references auth.users (id) on delete cascade,
+  accessed_at timestamptz not null default now()
+);
+
+create index if not exists recording_access_log_accessed_at_idx
+  on public.recording_access_log (accessed_at desc);
+
+alter table public.recording_access_log enable row level security;
+
+-- Staff can read the audit trail. Nobody — staff included — has an
+-- insert, update or delete policy: entries are written only by the
+-- service role inside /api/recording-access, so a staff account can
+-- neither forge an access entry nor erase its own.
+drop policy if exists "staff can read recording access log" on public.recording_access_log;
+create policy "staff can read recording access log"
+  on public.recording_access_log for select
+  using (public.is_staff());
+
+-- ---------------------------------------------------------
+-- match_recording_consent: lets the call UI tell a user *why* the
+-- call button is unavailable ("you haven't agreed yet" vs "your
+-- match hasn't agreed yet") without exposing any other part of the
+-- partner's profile. Same narrow-slice SECURITY DEFINER pattern as
+-- get_match_partner().
+-- ---------------------------------------------------------
+create or replace function public.match_recording_consent(p_match_id uuid)
+returns table (self_consented boolean, partner_consented boolean)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  m record;
+  youth_ok boolean;
+  senior_ok boolean;
+begin
+  select youth_id, senior_id into m
+  from public.matches
+  where id = p_match_id
+    and (youth_id = auth.uid() or senior_id = auth.uid());
+
+  if not found then
+    return; -- caller isn't part of this match: return zero rows
+  end if;
+
+  select (yp.recording_consent_at is not null) into youth_ok
+  from public.youth_profiles yp where yp.id = m.youth_id;
+
+  select (sp.recording_consent_at is not null) into senior_ok
+  from public.senior_profiles sp where sp.id = m.senior_id;
+
+  if m.youth_id = auth.uid() then
+    return query select coalesce(youth_ok, false), coalesce(senior_ok, false);
+  else
+    return query select coalesce(senior_ok, false), coalesce(youth_ok, false);
+  end if;
+end;
+$$;
+
+grant execute on function public.match_recording_consent(uuid) to authenticated;
+
+-- ---------------------------------------------------------
+-- record_recording_consent: a user agreeing to call recording after
+-- signup (anyone who created their account before this feature
+-- existed). Writes only to the caller's own profile row, and only
+-- ever sets the timestamp — it cannot be used to clear consent or to
+-- touch anyone else's row.
+-- ---------------------------------------------------------
+create or replace function public.record_recording_consent()
+returns timestamptz
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  ts timestamptz;
+begin
+  -- coalesce, not a plain assignment: re-agreeing keeps the original
+  -- timestamp, so the record always says when consent was *first*
+  -- given. A user's role is whichever table has their row (there is no
+  -- role flag), so this tries youth, then senior.
+  update public.youth_profiles
+     set recording_consent_at = coalesce(recording_consent_at, now())
+   where id = auth.uid()
+  returning recording_consent_at into ts;
+
+  if found then
+    return ts;
+  end if;
+
+  update public.senior_profiles
+     set recording_consent_at = coalesce(recording_consent_at, now())
+   where id = auth.uid()
+  returning recording_consent_at into ts;
+
+  if not found then
+    raise exception 'no profile for current user';
+  end if;
+
+  return ts;
+end;
+$$;
+
+grant execute on function public.record_recording_consent() to authenticated;

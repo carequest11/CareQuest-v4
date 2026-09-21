@@ -570,6 +570,26 @@ footer a:hover{color:#fff;}
   display:flex; align-items:center; justify-content:center;
 }
 .call-name{position:absolute; top:18px; left:18px; font-size:14px; font-weight:600; opacity:.85;}
+
+/* Recording notice. Sits above the video rather than on top of it so
+   it can never be mistaken for part of the Daily iframe's own chrome,
+   and so it never covers a control — it has to stay readable for the
+   whole call, at a size an older user can read across the room. */
+.call-recording-banner{
+  width:min(720px,90vw); box-sizing:border-box;
+  display:flex; align-items:center; gap:14px;
+  margin-bottom:14px; padding:16px 20px;
+  background:#B3301A; color:#fff; border-radius:14px;
+  font-size:19px; font-weight:700; line-height:1.35;
+}
+.call-recording-dot{
+  width:18px; height:18px; border-radius:50%; background:#fff; flex:none;
+  animation:callRecPulse 1.6s ease-in-out infinite;
+}
+@keyframes callRecPulse{0%,100%{opacity:1;} 50%{opacity:.3;}}
+@media (prefers-reduced-motion:reduce){ .call-recording-dot{animation:none;} }
+@media (max-width:600px){ .call-recording-banner{font-size:17px; padding:14px 16px;} }
+
 .call-controls{display:flex; gap:16px; margin-top:26px;}
 .call-btn{
   width:56px;height:56px;border-radius:50%; border:none; cursor:pointer;
@@ -625,6 +645,10 @@ footer a:hover{color:#fff;}
 </div>
 
 <div class="call-overlay hidden" id="callOverlay">
+  <div class="call-recording-banner" role="status">
+    <span class="call-recording-dot" aria-hidden="true"></span>
+    <span>Recording — this call is being recorded for everyone's safety.</span>
+  </div>
   <div class="call-stage">
     <div id="dailyCallContainer" style="position:absolute; inset:0; border-radius:20px; overflow:hidden;"></div>
   </div>
@@ -814,7 +838,20 @@ footer a:hover{color:#fff;}
       console.log('/api/daily-room response:', res.status, data);
 
       if(!res.ok){
-        document.getElementById('callStatus').textContent = data.error || 'Could not start the video call.';
+        const statusEl = document.getElementById('callStatus');
+        statusEl.textContent = data.error || 'Could not start the video call.';
+        // The consent prompt itself lives on the member page, so point
+        // there rather than leaving them on a dark screen with a
+        // problem and no way to fix it.
+        if(data.code === 'recording_consent_required' && !data.selfConsented){
+          statusEl.style.fontSize = '16px';
+          statusEl.style.opacity = '.9';
+          const link = document.createElement('a');
+          link.href = 'member';
+          link.textContent = 'Go to My CareQuest to agree →';
+          link.style.cssText = 'display:block; margin-top:10px; color:#fff; font-weight:700;';
+          statusEl.appendChild(link);
+        }
         return;
       }
       if(typeof data.url !== 'string' || !data.url){

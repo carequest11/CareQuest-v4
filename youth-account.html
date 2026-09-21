@@ -305,6 +305,20 @@ html.home-lock, body.home-lock{
 .field textarea{resize:vertical; min-height:100px; line-height:1.5;}
 .field-hint{display:block; font-weight:400; opacity:.65; font-size:15px;}
 .field-row{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+
+/* Recording consent. Deliberately loud rather than fine print: this is
+   the one field on the form that changes what happens to a recording
+   of someone's face and voice. */
+.consent-field{
+  padding:20px; border-radius:14px;
+  background:#FBF6F2; border:2px solid rgba(179,48,26,.35);
+  margin-bottom:24px;
+}
+.consent-check{display:flex; gap:14px; align-items:flex-start; cursor:pointer; margin-bottom:12px;}
+.consent-check input{width:26px; height:26px; flex:none; margin-top:2px; accent-color:var(--teal);}
+.consent-check span{font-size:18px; font-weight:600; line-height:1.45; color:var(--ink);}
+.consent-copy{font-size:15px; line-height:1.6; opacity:.82; margin:0;}
+.consent-copy strong{font-weight:700;}
 @media (max-width:600px){ .field-row{grid-template-columns:1fr;} }
 
 /* interview / availability day + slot pickers, recoloured to match */
@@ -650,6 +664,14 @@ footer a:hover{color:#fff;}
       <input id="password" type="password" placeholder="At least 8 characters" required>
     </div>
 
+    <div class="consent-field">
+      <label class="consent-check" for="recordingConsent">
+        <input type="checkbox" id="recordingConsent">
+        <span>I agree to my video calls being recorded.</span>
+      </label>
+      <p class="consent-copy"><strong>Why we do this:</strong> CareQuest records video calls so that a record exists if anyone ever raises a safety concern. Recordings are stored securely and are not shared with you or your match. Nobody watches them as a matter of course &mdash; only trained CareQuest staff can open a recording, only when a concern has been raised, and every time a staff member opens one we log who it was. Recordings are deleted automatically after 30 days.<br><br>You can tick this later instead, from your CareQuest page. Video calls stay switched off until both you and your match have agreed.</p>
+    </div>
+
     <p id="signupError" style="color:var(--rust); font-weight:600; display:none;"></p>
 
     <button type="submit" class="btn btn-rust acct-submit" id="signupBtn">Create Account &amp; Continue →</button>
@@ -674,6 +696,7 @@ footer a:hover{color:#fff;}
     const interests = document.getElementById('interests').value.trim();
     const languages = document.getElementById('languages').value.trim();
     const password = document.getElementById('password').value;
+    const recordingConsent = document.getElementById('recordingConsent').checked;
 
     if(!first_name || !email || !password){
       errEl.textContent = 'Please fill in your name, email, and a password.';
@@ -700,6 +723,7 @@ footer a:hover{color:#fff;}
       body: JSON.stringify({
         role: 'youth',
         userId: data.user.id,
+        recordingConsent,
         profile: { first_name, last_name, email, phone, age, interests, languages }
       })
     });
