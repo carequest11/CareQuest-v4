@@ -628,6 +628,7 @@ footer a:hover{color:#fff;}
 }
 @keyframes callRecPulse{0%,100%{opacity:1;} 50%{opacity:.3;}}
 @media (prefers-reduced-motion:reduce){ .call-recording-dot{animation:none;} }
+.call-recording-banner.warn{background:#6B4E0F;}
 @media (max-width:600px){ .call-recording-banner{font-size:17px; padding:14px 16px;} }
 
 /* Recording consent prompt inside the Calling card, for accounts
@@ -1296,9 +1297,12 @@ footer a:hover{color:#fff;}
 </div>
 
 <div class="call-overlay hidden" id="callOverlay">
-  <div class="call-recording-banner" role="status">
+  <div class="call-recording-banner hidden" id="callRecordingBanner" role="status">
     <span class="call-recording-dot" aria-hidden="true"></span>
     <span>Recording — this call is being recorded for everyone's safety.</span>
+  </div>
+  <div class="call-recording-banner warn hidden" id="callNotRecordingBanner" role="status">
+    <span>This call is <strong>not</strong> being recorded.</span>
   </div>
   <div class="call-stage">
     <div id="dailyCallContainer" style="position:absolute; inset:0; border-radius:20px; overflow:hidden;"></div>
@@ -1654,6 +1658,57 @@ footer a:hover{color:#fff;}
     try { return JSON.stringify(err); } catch(e){ return String(err); }
   }
 
+  // The recording banner must never claim more than is actually true:
+  // it stays hidden until Daily tells us a recording has really started.
+  // If recording stops, errors, or simply never begins, the call says so
+  // plainly instead — an unrecorded call presented as recorded is worse
+  // than one that admits it, because consent was given on that basis.
+  let recordingWatchdog = null;
+
+  function setRecordingState(state){
+    const rec = document.getElementById('callRecordingBanner');
+    const warn = document.getElementById('callNotRecordingBanner');
+    rec.classList.toggle('hidden', state !== 'recording');
+    warn.classList.toggle('hidden', state !== 'not-recording');
+  }
+
+  function watchRecordingState(frame){
+    setRecordingState('unknown');
+
+    frame
+      .on('recording-started', () => {
+        clearTimeout(recordingWatchdog);
+        setRecordingState('recording');
+      })
+      .on('recording-stopped', () => setRecordingState('not-recording'))
+      .on('recording-error', (e) => {
+        console.error('Daily recording error:', e);
+        setRecordingState('not-recording');
+      })
+      .on('joined-meeting', () => {
+        // Whoever joins second arrives after recording-started has
+        // already fired, so that event is never coming for them — the
+        // participants' record flag is the only way they can tell.
+        try {
+          const people = frame.participants() || {};
+          if(Object.values(people).some(p => p && p.record)){
+            setRecordingState('recording');
+            return;
+          }
+        } catch (err){
+          console.error('Could not read participants for recording state:', err);
+        }
+
+        // Nothing has confirmed recording shortly after joining, so stop
+        // implying it might be. Errs toward understating, never over.
+        clearTimeout(recordingWatchdog);
+        recordingWatchdog = setTimeout(() => {
+          const rec = document.getElementById('callRecordingBanner');
+          if(rec.classList.contains('hidden')) setRecordingState('not-recording');
+        }, 15000);
+      });
+  }
+
   async function startVideoCall(){
     if(!currentMatchId) return;
     document.getElementById('callOverlay').classList.remove('hidden');
@@ -1701,6 +1756,7 @@ footer a:hover{color:#fff;}
         showLeaveButton: false,
         iframeStyle: { width: '100%', height: '100%', border: '0' }
       });
+      watchRecordingState(dailyCallFrame);
       await dailyCallFrame.join(joinConfig);
       document.getElementById('callStatus').textContent = 'Connected';
     } catch (err){
@@ -1710,6 +1766,8 @@ footer a:hover{color:#fff;}
   }
 
   function endVideoCall(){
+    clearTimeout(recordingWatchdog);
+    setRecordingState('unknown');
     if(dailyCallFrame){
       dailyCallFrame.leave();
       dailyCallFrame.destroy();

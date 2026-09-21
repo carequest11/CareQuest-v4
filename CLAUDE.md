@@ -79,7 +79,11 @@ The only place secrets (`SUPABASE_SERVICE_ROLE_KEY`, `DAILY_API_KEY`) are used �
 
 ### Call recording (safeguarding)
 
-Every video call is cloud-recorded by Daily. The room is created with `enable_recording: 'cloud'` + `start_cloud_recording: true` so recording starts by itself, and each meeting token sets `enable_recording: false` so neither participant can stop it mid-call. `daily-room.js` also patches rooms created before this existed, and fails the call outright rather than letting it proceed unrecorded.
+Every video call is cloud-recorded by Daily. **The two halves of that live on different Daily objects and it's easy to get wrong:** `enable_recording: 'cloud'` is a **room** property (it permits recording), while `start_cloud_recording: true` is a **meeting token** property (it's what actually starts the recording when that token's holder joins). Putting `start_cloud_recording` in the room config makes Daily reject the room update. Don't set `enable_recording: false` on the token to stop participants halting a recording either — it contradicts `start_cloud_recording` and prevents recording starting at all; participants can't stop a recording anyway, since only owners get the Record control and these tokens don't set `is_owner`.
+
+`daily-room.js` verifies an existing room actually has `enable_recording: 'cloud'` before reusing it, patches it if not (re-reading Daily's returned config rather than trusting a 200), and deletes + recreates the room if the patch won't take. A call that can't be recorded is refused rather than run unrecorded.
+
+**The in-call recording banner is driven by Daily's `recording-started` / `recording-stopped` / `recording-error` events, never by the room config** — the server only knows recording was *requested*. Whoever joins second misses `recording-started`, so the join handler also checks the `record` flag on `participants()`; if nothing confirms recording within 15s the UI says the call is *not* being recorded. Keep it that way round: understating is acceptable, claiming a call is recorded when it isn't is not, since consent was given on that basis.
 
 Room names are `cq-match-<match id>` — that naming is the only link from a Daily webhook event back to a match, so don't change it without updating `daily-webhook.js`.
 

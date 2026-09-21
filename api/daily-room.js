@@ -24,14 +24,24 @@ function isFullRoomUrl(value) {
 // starts on its own as soon as someone joins — nobody on the call has
 // to (or gets to) press record. /api/daily-webhook turns the resulting
 // recording.* events into public.call_recordings rows.
+//
+// The two halves live on different objects, which is easy to get wrong:
+//   - enable_recording: 'cloud' is a ROOM property — it permits cloud
+//     recording at all.
+//   - start_cloud_recording: true is a MEETING TOKEN property — it is
+//     what actually starts the recording when that token's holder
+//     joins. Daily starts a cloud recording only via an owner clicking
+//     Record, or a token carrying this flag.
+//
+// Putting start_cloud_recording in the room config (as this once did)
+// is rejected by Daily and leaves the room un-patchable.
 const RECORDING_ROOM_PROPERTIES = {
-  enable_recording: 'cloud',
-  start_cloud_recording: true
+  enable_recording: 'cloud'
 };
 
 function roomIsRecording(room) {
   const cfg = (room && room.config) || {};
-  return cfg.enable_recording === 'cloud' && cfg.start_cloud_recording === true;
+  return cfg.enable_recording === 'cloud';
 }
 
 module.exports = async (req, res) => {
@@ -128,11 +138,17 @@ module.exports = async (req, res) => {
       } else {
         // Rooms created before recording was added are still perfectly
         // joinable, so the check above happily reuses them — and they'd
-        // silently never record. Patching the existing room is what
-        // makes every match converge on recording without waiting for
-        // its 30-day exp to lapse.
+        // silently never record. Patch them instead, so every match
+        // converges on recording without waiting for its 30-day exp.
         const existingRoom = await checkRes.json();
+
         if (!roomIsRecording(existingRoom)) {
+          console.log('daily-room: existing room is not set to record, patching', {
+            matchId: match.id,
+            roomName,
+            config: existingRoom.config
+          });
+
           const patchRes = await fetch(`https://api.daily.co/v1/rooms/${roomName}`, {
             method: 'POST',
             headers: {
@@ -141,13 +157,54 @@ module.exports = async (req, res) => {
             },
             body: JSON.stringify({ properties: RECORDING_ROOM_PROPERTIES })
           });
-          if (!patchRes.ok) {
-            const detail = await patchRes.text();
-            console.error('daily-room: could not enable recording on existing room', patchRes.status, detail);
-            res.status(502).json({ error: 'Could not enable call recording for this room', detail });
-            return;
+
+          const patchBody = await patchRes.text();
+
+          // Trust the room Daily returns, not the fact it said 200 —
+          // a property it declines to apply comes back as a success
+          // with the old config, which would otherwise look patched.
+          let patched = null;
+          if (patchRes.ok) {
+            try {
+              patched = JSON.parse(patchBody);
+            } catch (e) {
+              console.error('daily-room: patch response was not JSON', patchBody);
+            }
           }
-          console.log('daily-room: enabled recording on pre-existing room', { matchId: match.id, roomUrl });
+
+          if (!patchRes.ok || !roomIsRecording(patched)) {
+            console.error('daily-room: could not enable recording by patching, will recreate', {
+              matchId: match.id,
+              roomName,
+              status: patchRes.status,
+              dailyResponse: patchBody
+            });
+
+            // Fall back to a clean room. The name is derived from the
+            // match id, so the delete has to land before the create can
+            // reuse it — if the delete fails there's no way to get a
+            // recording room for this match, and the call must not
+            // proceed unrecorded.
+            const delRes = await fetch(`https://api.daily.co/v1/rooms/${roomName}`, {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${process.env.DAILY_API_KEY}` }
+            });
+
+            if (!delRes.ok && delRes.status !== 404) {
+              const delBody = await delRes.text();
+              console.error('daily-room: could not delete un-patchable room', delRes.status, delBody);
+              res.status(502).json({
+                error: 'Could not enable call recording for this room, so the call was not started.',
+                detail: delBody
+              });
+              return;
+            }
+
+            console.log('daily-room: deleted un-patchable room, recreating', { matchId: match.id, roomName });
+            roomUrl = null;
+          } else {
+            console.log('daily-room: enabled recording on pre-existing room', { matchId: match.id, roomUrl });
+          }
         }
       }
     }
@@ -215,11 +272,17 @@ module.exports = async (req, res) => {
           room_name: roomUrl.split('/').pop(),
           user_id: uid,
           exp: Math.floor(Date.now() / 1000) + 60 * 60 * 2,
-          // The room auto-starts its own recording; this only governs
-          // what *this participant* may do about it. false hides the
-          // record control, so neither person can stop the recording
-          // partway through a call they'd rather wasn't reviewable.
-          enable_recording: false
+          // This is what actually starts the recording, the moment
+          // either person joins. It requires the room's
+          // enable_recording: 'cloud', checked above.
+          start_cloud_recording: true
+          // Deliberately NOT setting enable_recording: false here. It
+          // reads like "stop them turning recording off", but it
+          // contradicts the line above — start_cloud_recording needs
+          // enable_recording to be 'cloud' on the room or the token —
+          // and it stopped recording from ever starting. Participants
+          // can't stop a recording anyway: only owners get the Record
+          // control, and these tokens don't set is_owner.
         }
       })
     });
@@ -235,7 +298,12 @@ module.exports = async (req, res) => {
     }
 
     const tokenData = await tokenRes.json();
-    const responseBody = { url: roomUrl, token: tokenData.token, recording: true };
+    // Deliberately not claiming "recording: true" here. All this knows
+    // is that the room and token are configured to record; whether a
+    // recording actually started is something only Daily's in-call
+    // events can say, and the UI waits for those before telling anyone
+    // their call is being recorded.
+    const responseBody = { url: roomUrl, token: tokenData.token };
     console.log('daily-room: returning room for match', match.id);
     res.status(200).json(responseBody);
   } catch (err) {
