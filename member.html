@@ -1058,6 +1058,22 @@ footer a:hover{color:#fff;}
   <p>Everything about your match, in one place.</p>
 </div>
 
+<!-- Staff-only: shown when is_staff() is true for the signed-in
+     account, regardless of whether they're also a youth or senior
+     member. Lets staff subscribe this browser/device to a push
+     notification the moment a new youth or senior signs up, so
+     matching & verification can happen quickly. -->
+<div class="dash-shell hidden" id="staffAlertsCard" style="padding-bottom:0;">
+  <div class="dg-card">
+    <div class="dg-card-head">
+      <div class="dg-badge dg-badge-sky" id="staffAlertsBadgeIcon"></div>
+      <h3 class="dg-card-title">Staff: Sign-up Alerts</h3>
+    </div>
+    <p class="dg-card-copy" id="staffAlertsStatus">Get a notification on this device the moment a new youth or senior signs up.</p>
+    <button type="button" class="btn btn-primary" id="staffAlertsEnableBtn" style="margin-top:8px;">Enable Sign-up Alerts</button>
+  </div>
+</div>
+
 <!-- ===================================================
      YOUTH VIEW — three tabs (Home / Your Match / Opportunities
      & Impact). Hidden until the signed-in user is confirmed to be a
@@ -1360,6 +1376,11 @@ footer a:hover{color:#fff;}
   // is plain UTC, so per-user timezones can be added later without a
   // migration, just a change to what zone this code assumes.
   // ---------------------------------------------------------
+  // Public by design — paired with /api/send-signup-push's matching
+  // VAPID_PRIVATE_KEY, which never reaches the client. Regenerate both
+  // together (see .env.example) if you ever need to rotate this.
+  const VAPID_PUBLIC_KEY = 'BMD8CEhj3zywlG8lFw1YOb1uO8G0oUOPrjXitqT79WzeXTNVwor3-bGDR8M-Ey6Ixrh2RDluiSqb1P8xuFLBPHU';
+
   const TIME_ZONE = 'America/Vancouver';
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   // 1-hour increments (was 2-hour). A booked visit is still
@@ -1586,6 +1607,83 @@ footer a:hover{color:#fff;}
     if(updates.first_name){
       document.getElementById('memberGreeting').textContent = 'Welcome back, ' + updates.first_name;
     }
+  }
+
+  // ---------------------------------------------------------
+  // Staff sign-up push alerts. Shown only when is_staff() is true for
+  // the signed-in account (checked via RPC, same narrow-exception
+  // pattern as every other is_staff() use in this app — there is no
+  // client-side flag for this). Subscribing registers push-sw.js at
+  // the site root and upserts the resulting Web Push subscription into
+  // push_subscriptions; /api/send-signup-push reads that table when a
+  // Supabase Database Webhook fires on a new sign-up.
+  // ---------------------------------------------------------
+  function urlBase64ToUint8Array(base64String){
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for(let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
+    return outputArray;
+  }
+
+  async function initStaffAlerts(){
+    if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    const { data: isStaff, error } = await cq.rpc('is_staff');
+    if(error || !isStaff) return;
+
+    const card = document.getElementById('staffAlertsCard');
+    const statusEl = document.getElementById('staffAlertsStatus');
+    const btn = document.getElementById('staffAlertsEnableBtn');
+    card.classList.remove('hidden');
+
+    const registration = await navigator.serviceWorker.register('/push-sw.js');
+    const existing = await registration.pushManager.getSubscription();
+    if(existing){
+      statusEl.textContent = 'Sign-up alerts are on for this device.';
+      btn.textContent = 'Alerts Enabled';
+      btn.disabled = true;
+      return;
+    }
+
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      try {
+        const permission = await Notification.requestPermission();
+        if(permission !== 'granted'){
+          statusEl.textContent = 'Notifications were blocked for this site — enable them in your browser settings to turn this on.';
+          btn.disabled = false;
+          return;
+        }
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+
+        const { error: upsertErr } = await cq.from('push_subscriptions').upsert({
+          user_id: currentUserId,
+          endpoint: subscription.endpoint,
+          p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
+          auth_key: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth'))))
+        }, { onConflict: 'endpoint' });
+
+        if(upsertErr){
+          console.error('Could not save push subscription:', upsertErr);
+          statusEl.textContent = 'Could not turn on alerts. Please try again.';
+          btn.disabled = false;
+          return;
+        }
+
+        statusEl.textContent = 'Sign-up alerts are on for this device.';
+        btn.textContent = 'Alerts Enabled';
+      } catch (err){
+        console.error('Enabling sign-up alerts failed:', err);
+        statusEl.textContent = 'Could not turn on alerts. Please try again.';
+        btn.disabled = false;
+      }
+    });
   }
 
   // ---------------------------------------------------------
@@ -2839,6 +2937,7 @@ footer a:hover{color:#fff;}
       return;
     }
     currentUserId = session.user.id;
+    initStaffAlerts();
 
     try {
       // Look up both profile tables explicitly rather than assuming

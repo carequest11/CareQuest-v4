@@ -730,3 +730,56 @@ end;
 $$;
 
 grant execute on function public.record_recording_consent() to authenticated;
+
+-- =========================================================
+-- Staff push notifications for new sign-ups
+--
+-- Run just this section if the tables/policies above are already
+-- applied — every statement here is safe to re-run on its own.
+--
+-- One row per browser/device a staff member has enabled sign-up
+-- alerts on (Web Push subscription). Populated by member.html when a
+-- staff account clicks "Enable sign-up alerts"; read by
+-- /api/send-signup-push (service role) when a Supabase Database
+-- Webhook fires on insert into youth_profiles/senior_profiles.
+-- =========================================================
+create table if not exists public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth_key text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists push_subscriptions_user_id_idx
+  on public.push_subscriptions (user_id);
+
+alter table public.push_subscriptions enable row level security;
+
+-- Only staff accounts may have rows here, and only for themselves —
+-- same is_staff() narrow-exception pattern used by messages/staff_users
+-- above. There is no policy letting anyone read another user's rows,
+-- and /api/send-signup-push only ever reads this table with the
+-- service role, which bypasses RLS entirely (that's expected — it's
+-- the one place that legitimately needs every staff subscription).
+drop policy if exists "staff can insert their own push subscription" on public.push_subscriptions;
+create policy "staff can insert their own push subscription"
+  on public.push_subscriptions for insert
+  with check (user_id = auth.uid() and public.is_staff());
+
+drop policy if exists "staff can update their own push subscription" on public.push_subscriptions;
+create policy "staff can update their own push subscription"
+  on public.push_subscriptions for update
+  using (user_id = auth.uid() and public.is_staff())
+  with check (user_id = auth.uid() and public.is_staff());
+
+drop policy if exists "staff can read their own push subscriptions" on public.push_subscriptions;
+create policy "staff can read their own push subscriptions"
+  on public.push_subscriptions for select
+  using (user_id = auth.uid() and public.is_staff());
+
+drop policy if exists "staff can delete their own push subscriptions" on public.push_subscriptions;
+create policy "staff can delete their own push subscriptions"
+  on public.push_subscriptions for delete
+  using (user_id = auth.uid() and public.is_staff());
