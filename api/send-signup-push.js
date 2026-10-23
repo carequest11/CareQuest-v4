@@ -75,15 +75,19 @@ module.exports = async (req, res) => {
       return;
     }
 
-    await Promise.all((subscriptions || []).map(async (sub) => {
+    // Per-subscription outcome, returned in the response so a failed
+    // delivery is visible from Supabase (net._http_response.content)
+    // rather than only in Vercel's function logs.
+    const results = await Promise.all((subscriptions || []).map(async (sub) => {
       try {
-        await webpush.sendNotification(
+        const sent = await webpush.sendNotification(
           {
             endpoint: sub.endpoint,
             keys: { p256dh: sub.p256dh, auth: sub.auth_key }
           },
           payload
         );
+        return { id: sub.id, status: sent.statusCode };
       } catch (err) {
         // 404/410 means the browser unsubscribed or the subscription
         // expired — delete it so future sign-ups don't keep retrying
@@ -95,10 +99,19 @@ module.exports = async (req, res) => {
         } else {
           console.error('web-push send failed for subscription', sub.id, err);
         }
+        return {
+          id: sub.id,
+          status: err.statusCode || null,
+          error: String(err.body || err.message || err).slice(0, 300)
+        };
       }
     }));
 
-    res.status(200).json({ ok: true, notified: (subscriptions || []).length });
+    res.status(200).json({
+      ok: true,
+      sent: results.filter((r) => !r.error).length,
+      failed: results.filter((r) => r.error)
+    });
   } catch (err) {
     res.status(500).json({ error: 'Unexpected server error' });
   }
