@@ -783,3 +783,85 @@ drop policy if exists "staff can delete their own push subscriptions" on public.
 create policy "staff can delete their own push subscriptions"
   on public.push_subscriptions for delete
   using (user_id = auth.uid() and public.is_staff());
+
+-- =========================================================
+-- Sign-up push triggers (replaces the dashboard Database Webhooks)
+--
+-- Run just this section if the tables/policies above are already
+-- applied — every statement here is safe to re-run on its own.
+--
+-- The dashboard's Database Webhooks form fails on this project
+-- ("schema supabase_functions does not exist"), so these triggers do
+-- the same job directly with pg_net, which is what those webhooks
+-- are built on. The request body matches the dashboard webhook's
+-- shape ({ type, table, schema, record }), so /api/send-signup-push
+-- needs no changes.
+--
+-- The x-webhook-secret value lives in Supabase Vault, not in this
+-- file or the function source. Store it once (separately from this
+-- section, with the real value in place of the placeholder — the same
+-- value as Vercel's SIGNUP_PUSH_WEBHOOK_SECRET):
+--
+--   do $$
+--   declare existing uuid;
+--   begin
+--     select id into existing from vault.secrets
+--       where name = 'signup_push_webhook_secret';
+--     if existing is null then
+--       perform vault.create_secret('<secret>', 'signup_push_webhook_secret');
+--     else
+--       perform vault.update_secret(existing, '<secret>');
+--     end if;
+--   end $$;
+-- =========================================================
+create extension if not exists pg_net with schema extensions;
+
+drop function if exists public.notify_signup_push() cascade;
+create function public.notify_signup_push()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  webhook_secret text;
+begin
+  -- A notification problem must never block a sign-up, so any error
+  -- here is downgraded to a warning and the insert goes through.
+  begin
+    select decrypted_secret into webhook_secret
+      from vault.decrypted_secrets
+      where name = 'signup_push_webhook_secret';
+
+    perform net.http_post(
+      url := 'https://carequest.info/api/send-signup-push',
+      body := jsonb_build_object(
+        'type', 'INSERT',
+        'table', TG_TABLE_NAME,
+        'schema', TG_TABLE_SCHEMA,
+        'record', to_jsonb(new)
+      ),
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'x-webhook-secret', coalesce(webhook_secret, '')
+      ),
+      timeout_milliseconds := 5000
+    );
+  exception when others then
+    raise warning 'notify_signup_push failed: %', sqlerrm;
+  end;
+  return new;
+end;
+$$;
+
+revoke all on function public.notify_signup_push() from public, anon, authenticated;
+
+drop trigger if exists signup_push_youth on public.youth_profiles;
+create trigger signup_push_youth
+  after insert on public.youth_profiles
+  for each row execute function public.notify_signup_push();
+
+drop trigger if exists signup_push_senior on public.senior_profiles;
+create trigger signup_push_senior
+  after insert on public.senior_profiles
+  for each row execute function public.notify_signup_push();

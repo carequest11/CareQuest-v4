@@ -1,10 +1,10 @@
 // POST /api/send-signup-push
 //
-// Called by a Supabase Database Webhook (Database -> Webhooks in the
-// Supabase dashboard, one for youth_profiles and one for
-// senior_profiles, both on INSERT) the moment a new sign-up row is
-// written. Sends a Web Push notification to every staff device that
-// has subscribed, so staff can match & verify new sign-ups quickly.
+// Called by the pg_net triggers on youth_profiles and senior_profiles
+// (see the "Sign-up push triggers" section of supabase-schema.sql) the
+// moment a new sign-up row is written. Sends a Web Push notification
+// to every staff device that has subscribed, so staff can match &
+// verify new sign-ups quickly.
 //
 // Setup, in order:
 //   1. Run the "Staff push notifications for new sign-ups" section of
@@ -12,13 +12,11 @@
 //   2. Set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT and
 //      SIGNUP_PUSH_WEBHOOK_SECRET in Vercel env vars, then deploy —
 //      see .env.example for how to generate these.
-//   3. In the Supabase dashboard: Database -> Webhooks -> Create a new
-//      webhook, once for each of youth_profiles and senior_profiles:
-//        - Events: Insert
-//        - Type: HTTP Request, POST
-//        - URL: https://<your-domain>/api/send-signup-push
-//        - HTTP Headers: x-webhook-secret: <same value as
-//          SIGNUP_PUSH_WEBHOOK_SECRET>
+//   3. Run the "Sign-up push triggers" section of supabase-schema.sql
+//      (pg_net triggers on youth_profiles/senior_profiles), after
+//      storing SIGNUP_PUSH_WEBHOOK_SECRET's value in Supabase Vault as
+//      described in that section's header. The dashboard's Database
+//      Webhooks form fails on this project, so it isn't used.
 //   4. In member.html, a signed-in staff account (is_staff() = true)
 //      can click "Enable sign-up alerts" to subscribe that browser.
 const { createClient } = require('@supabase/supabase-js');
