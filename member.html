@@ -1379,7 +1379,7 @@ footer a:hover{color:#fff;}
   // Public by design — paired with /api/send-signup-push's matching
   // VAPID_PRIVATE_KEY, which never reaches the client. Regenerate both
   // together (see .env.example) if you ever need to rotate this.
-  const VAPID_PUBLIC_KEY = 'BOdJM5MnlK6BKkxqjIQ2MrTiYLE6DyzXrnCrf2x37AH0bcvbUm4oHjncdKX0DgpqYE7kmz-QbyE74MCmF5zzpXI';
+  const VAPID_PUBLIC_KEY = 'BA4M7-P3P16bSWPFoMG74RBWH_5ykkWtN0qp1GWBHMHbKMtVJCXR0h5la35GwdcvUceIVRYsBK0Am3nq197oOJI';
 
   const TIME_ZONE = 'America/Vancouver';
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -1615,8 +1615,8 @@ footer a:hover{color:#fff;}
   // pattern as every other is_staff() use in this app — there is no
   // client-side flag for this). Subscribing registers push-sw.js at
   // the site root and upserts the resulting Web Push subscription into
-  // push_subscriptions; /api/send-signup-push reads that table when a
-  // Supabase Database Webhook fires on a new sign-up.
+  // push_subscriptions; /api/send-signup-push reads that table when the
+  // pg_net trigger fires on a new sign-up.
   // ---------------------------------------------------------
   function urlBase64ToUint8Array(base64String){
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -1625,6 +1625,25 @@ footer a:hover{color:#fff;}
     const outputArray = new Uint8Array(rawData.length);
     for(let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
     return outputArray;
+  }
+
+  function subscriptionUsesCurrentKey(subscription){
+    const key = subscription.options && subscription.options.applicationServerKey;
+    if(!key) return true; // browser doesn't expose it; can't tell, so trust it
+    const current = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+    const existing = new Uint8Array(key);
+    return existing.length === current.length && existing.every((b, i) => b === current[i]);
+  }
+
+  async function savePushSubscription(subscription){
+    const { error } = await cq.from('push_subscriptions').upsert({
+      user_id: currentUserId,
+      endpoint: subscription.endpoint,
+      p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
+      auth_key: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth'))))
+    }, { onConflict: 'endpoint' });
+    if(error) console.error('Could not save push subscription:', error);
+    return error;
   }
 
   async function initStaffAlerts(){
@@ -1641,10 +1660,21 @@ footer a:hover{color:#fff;}
     const registration = await navigator.serviceWorker.register('/push-sw.js');
     const existing = await registration.pushManager.getSubscription();
     if(existing){
-      statusEl.textContent = 'Sign-up alerts are on for this device.';
-      btn.textContent = 'Alerts Enabled';
-      btn.disabled = true;
-      return;
+      if(subscriptionUsesCurrentKey(existing)){
+        // Re-save on every visit so a row that was never written (or
+        // was deleted as expired) comes back without staff noticing.
+        await savePushSubscription(existing);
+        statusEl.textContent = 'Sign-up alerts are on for this device.';
+        btn.textContent = 'Alerts Enabled';
+        btn.disabled = true;
+        return;
+      }
+      // Subscribed under an older VAPID key, so every push to it is
+      // rejected (403) — drop it and let staff re-enable with the
+      // current key instead of showing "on" for a dead subscription.
+      await cq.from('push_subscriptions').delete().eq('endpoint', existing.endpoint);
+      await existing.unsubscribe();
+      statusEl.textContent = 'Sign-up alerts were reset. Please turn them on again for this device.';
     }
 
     btn.addEventListener('click', async () => {
@@ -1662,15 +1692,8 @@ footer a:hover{color:#fff;}
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
         });
 
-        const { error: upsertErr } = await cq.from('push_subscriptions').upsert({
-          user_id: currentUserId,
-          endpoint: subscription.endpoint,
-          p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
-          auth_key: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth'))))
-        }, { onConflict: 'endpoint' });
-
+        const upsertErr = await savePushSubscription(subscription);
         if(upsertErr){
-          console.error('Could not save push subscription:', upsertErr);
           statusEl.textContent = 'Could not turn on alerts. Please try again.';
           btn.disabled = false;
           return;
