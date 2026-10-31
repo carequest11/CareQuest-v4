@@ -248,12 +248,28 @@ html.home-lock, body.home-lock{
   display:flex; width:max-content;
   animation:press-scroll 50s linear infinite;
 }
-.press-belt:hover .press-track{animation-play-state:paused;}
+/* Pause on keyboard focus too, so a link isn't a moving target. */
+.press-belt:hover .press-track,
+.press-belt:focus-within .press-track{animation-play-state:paused;}
 .press-list{
   display:flex; align-items:center; flex:none;
   list-style:none; margin:0; padding:0;
 }
-.press-list li{flex:none; padding:0 clamp(24px,3vw,40px);}
+.press-list li{flex:none; padding:0 clamp(12px,1.8vw,26px);}
+.press-list a{
+  display:block; padding:10px 14px; border-radius:12px;
+  border:1.5px solid transparent;
+  transition:background-color .2s ease, border-color .2s ease, transform .2s ease;
+}
+.press-list a:hover{
+  background:#fff; border-color:var(--line);
+  transform:translateY(-2px);
+  box-shadow:0 6px 14px rgba(35,43,54,.10);
+}
+.press-list a:focus-visible{
+  outline:3px solid var(--teal); outline-offset:2px;
+  background:#fff;
+}
 .press-list img{
   display:block; height:40px; width:auto;
 }
@@ -263,13 +279,15 @@ html.home-lock, body.home-lock{
 }
 @media (max-width:600px){
   .press-belt h2{font-size:13px;}
-  .press-list li{padding:0 18px;}
+  .press-list li{padding:0 8px;}
+  .press-list a{padding:8px 10px;}
   .press-list img{height:28px;}
 }
 /* No motion at all: drop the duplicate list and let people swipe or
    scroll the single row themselves instead. */
 @media (prefers-reduced-motion:reduce){
   .press-track{animation:none; margin:0 auto;}
+  .press-list a, .press-list a:hover{transform:none;}
   .press-list[aria-hidden="true"]{display:none;}
   .press-viewport{
     overflow-x:auto;
@@ -687,20 +705,20 @@ footer a:hover{color:#fff;}
     <div class="press-viewport">
       <div class="press-track">
         <ul class="press-list">
-          <li><img src="images/press-highoncity.png" alt="HighOnCity" width="443" height="96"></li>
-          <li><img src="images/press-northshorenews.png" alt="North Shore News" width="209" height="96"></li>
-          <li><img src="images/press-castanet.png" alt="Castanet" width="464" height="96"></li>
-          <li><img src="images/press-niagarafallsreview.png" alt="Niagara Falls Review" width="364" height="96"></li>
-          <li><img src="images/press-pentictonherald.png" alt="Penticton Herald" width="607" height="96"></li>
-          <li><img src="images/press-wellandtribune.png" alt="Welland Tribune" width="399" height="96"></li>
+          <li><a href="https://highoncity.com/vancouver/neighborhoods/west-vancouver/west-vancouver-carequest-seniors-youth-loneliness" target="_blank" rel="noopener" aria-label="Read the HighOnCity article about CareQuest (opens in a new tab)"><img src="images/press-highoncity.png" alt="HighOnCity" width="443" height="96"></a></li>
+          <li><a href="https://www.nsnews.com/in-the-community/west-vancouver-students-aim-to-combat-senior-loneliness-with-new-program-12939095" target="_blank" rel="noopener" aria-label="Read the North Shore News article about CareQuest (opens in a new tab)"><img src="images/press-northshorenews.png" alt="North Shore News" width="209" height="96"></a></li>
+          <li><a href="https://www.castanetkamloops.net/edition/news-story-635808-3-.htm" target="_blank" rel="noopener" aria-label="Read the Castanet article about CareQuest (opens in a new tab)"><img src="images/press-castanet.png" alt="Castanet" width="464" height="96"></a></li>
+          <li><a href="https://www.niagarafallsreview.ca/news/canada/west-vancouver-students-aim-to-combat-senior-loneliness-with-new-program/article_c09f8434-b52a-518f-8fc2-7074c8fd87ed.html" target="_blank" rel="noopener" aria-label="Read the Niagara Falls Review article about CareQuest (opens in a new tab)"><img src="images/press-niagarafallsreview.png" alt="Niagara Falls Review" width="364" height="96"></a></li>
+          <li><a href="https://www.pentictonherald.ca/spare_news/article_c572556b-3709-56db-a774-283bce89fd1e.html" target="_blank" rel="noopener" aria-label="Read the Penticton Herald article about CareQuest (opens in a new tab)"><img src="images/press-pentictonherald.png" alt="Penticton Herald" width="607" height="96"></a></li>
+          <li><a href="https://www.wellandtribune.ca/news/canada/west-vancouver-students-aim-to-combat-senior-loneliness-with-new-program/article_cc4659be-c736-5c8b-92f1-1661b9ebd201.html" target="_blank" rel="noopener" aria-label="Read the Welland Tribune article about CareQuest (opens in a new tab)"><img src="images/press-wellandtribune.png" alt="Welland Tribune" width="399" height="96"></a></li>
         </ul>
         <ul class="press-list" aria-hidden="true">
-          <li><img src="images/press-highoncity.png" alt="" width="443" height="96"></li>
-          <li><img src="images/press-northshorenews.png" alt="" width="209" height="96"></li>
-          <li><img src="images/press-castanet.png" alt="" width="464" height="96"></li>
-          <li><img src="images/press-niagarafallsreview.png" alt="" width="364" height="96"></li>
-          <li><img src="images/press-pentictonherald.png" alt="" width="607" height="96"></li>
-          <li><img src="images/press-wellandtribune.png" alt="" width="399" height="96"></li>
+          <li><a href="https://highoncity.com/vancouver/neighborhoods/west-vancouver/west-vancouver-carequest-seniors-youth-loneliness" target="_blank" rel="noopener" tabindex="-1"><img src="images/press-highoncity.png" alt="" width="443" height="96"></a></li>
+          <li><a href="https://www.nsnews.com/in-the-community/west-vancouver-students-aim-to-combat-senior-loneliness-with-new-program-12939095" target="_blank" rel="noopener" tabindex="-1"><img src="images/press-northshorenews.png" alt="" width="209" height="96"></a></li>
+          <li><a href="https://www.castanetkamloops.net/edition/news-story-635808-3-.htm" target="_blank" rel="noopener" tabindex="-1"><img src="images/press-castanet.png" alt="" width="464" height="96"></a></li>
+          <li><a href="https://www.niagarafallsreview.ca/news/canada/west-vancouver-students-aim-to-combat-senior-loneliness-with-new-program/article_c09f8434-b52a-518f-8fc2-7074c8fd87ed.html" target="_blank" rel="noopener" tabindex="-1"><img src="images/press-niagarafallsreview.png" alt="" width="364" height="96"></a></li>
+          <li><a href="https://www.pentictonherald.ca/spare_news/article_c572556b-3709-56db-a774-283bce89fd1e.html" target="_blank" rel="noopener" tabindex="-1"><img src="images/press-pentictonherald.png" alt="" width="607" height="96"></a></li>
+          <li><a href="https://www.wellandtribune.ca/news/canada/west-vancouver-students-aim-to-combat-senior-loneliness-with-new-program/article_cc4659be-c736-5c8b-92f1-1661b9ebd201.html" target="_blank" rel="noopener" tabindex="-1"><img src="images/press-wellandtribune.png" alt="" width="399" height="96"></a></li>
         </ul>
       </div>
     </div>
