@@ -16,9 +16,26 @@ Two people work in this repo. **Always run `git pull` at the start of a session,
 
 Design for older users throughout: large text, high contrast, generous tap targets. This applies to any UI/CSS work on this site, not just `member.html`.
 
-## You cannot run SQL
+## Running SQL — the Supabase MCP server
 
-There is no way for you to execute SQL against the live Supabase project from this environment. Whenever a change requires a schema change — a new table, column, policy, function, or Storage bucket/policy — **print the full SQL** in your response for the user to paste into the Supabase SQL editor themselves, and **remind them to run it before pushing** the code that depends on it (or before deploying, if it's already pushed). See `supabase-schema.sql` below for the format to follow.
+The project-scoped Supabase MCP server (`.mcp.json`, committed) connects you directly to the **live production project**, so you can run SQL yourself instead of printing it for the user to paste. There is no staging copy and no separate dev database: anything you run lands on real data.
+
+**This database holds real users, including minors.** Treat that as the reason for the rule below, not a footnote to it.
+
+**Read-only work — run it freely.** `SELECT`, `EXPLAIN`, inspecting schema/policies, and additive DDL that cannot destroy existing data (`create table if not exists`, `create policy`, `create or replace function`, `create index`, `ALTER TABLE ... ADD COLUMN`) need no special ceremony — just say what you ran.
+
+**Destructive or data-mutating statements — show the exact SQL and stop.** Post the statement you intend to run, say in one line what it will affect and roughly how many rows, and **wait for the user's explicit approval before executing it**. This covers at least:
+- `DROP` anything — table, column, policy, function, index, bucket
+- `DELETE` — any row deletion at all, `WHERE` clause or not
+- `UPDATE` **without a `WHERE`**, or with a `WHERE` broad enough to hit rows beyond the one record in question
+- `ALTER` that removes or rewrites existing data — dropping or renaming a column, narrowing a type, adding a constraint that could fail against existing rows
+- `TRUNCATE`, and anything touching `auth.users` or Storage objects
+
+Approval is **per statement, not per session**: a yes to one `DELETE` is not a yes to the next one. If a task needs several destructive steps, show them all up front and get approval for the set, then report what actually ran. When a safe alternative exists — soft-delete via a status flag, a new nullable column instead of a type change, `WHERE id = $1` instead of a broad predicate — propose that first. Never wrap a destructive statement inside a function, migration, or `DO` block to get it past this rule; the rule is about what the SQL does, not what it's spelled inside.
+
+If the MCP server is unavailable in a given session, fall back to the old flow: **print the full SQL** for the user to paste into the Supabase SQL editor, and **remind them to run it before pushing** the code that depends on it (or before deploying, if it's already pushed). See `supabase-schema.sql` below for the format to follow.
+
+Either way, **`supabase-schema.sql` stays the source of truth** — anything you run against the live project also gets appended there as a new section, so the file and the database don't drift apart.
 
 ## Commands
 
@@ -42,7 +59,7 @@ Pages that talk to Supabase load three scripts in this order: the Supabase CDN b
 
 ### Database schema and RLS (`supabase-schema.sql`)
 
-This file is the single source of truth for the schema and is meant to be pasted into the Supabase SQL editor — it is **not** run automatically. It's organized as sequential, independently-runnable sections in the order they were added (profiles/matches → messaging/staff → scheduling → profile photos); each section is idempotent (`create table if not exists`, `drop policy if exists` + `create policy`, `drop function if exists` + `create function`). When adding a feature, append a new section rather than editing an old one in place, and give the user the new section's SQL to paste in — don't assume it's already applied.
+This file is the single source of truth for the schema — it is **not** run automatically against the project. It's organized as sequential, independently-runnable sections in the order they were added (profiles/matches → messaging/staff → scheduling → profile photos); each section is idempotent (`create table if not exists`, `drop policy if exists` + `create policy`, `drop function if exists` + `create function`). When adding a feature, append a new section rather than editing an old one in place, and don't assume an existing section has already been applied — check against the live project (see "Running SQL" above) rather than guessing.
 
 Core tables:
 - `youth_profiles`, `senior_profiles` — one row per `auth.users` row per role. **A user's role is inferred by which table has a row for their id, not an explicit flag.** RLS: a user can only read/write their own row; there is no policy letting anyone list either table.
