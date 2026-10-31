@@ -6,7 +6,21 @@
 // Signed in: shows the member's first name (linking to member)
 // and a "Log Out" button. Reacts live to auth state changes so a page
 // left open across a login/logout elsewhere stays in sync.
+//
+// Also toggles `cq-signed-in` on <html>, which hides anything marked
+// data-signed-out-only (see css/auth-header.css).
 (function () {
+  function setSignedInFlag(on) {
+    document.documentElement.classList.toggle('cq-signed-in', on);
+  }
+
+  // Set the flag from the stored session straight away, so signed-in
+  // users don't see a "Get Started" button flash before getSession()
+  // resolves. refresh() corrects it if that session turns out invalid.
+  try {
+    setSignedInFlag(Object.keys(localStorage).some((k) => /^sb-.+-auth-token$/.test(k)));
+  } catch (_) {}
+
   function renderSignedOut(slot) {
     slot.textContent = '';
     const a = document.createElement('a');
@@ -59,6 +73,7 @@
   }
 
   async function refresh(slot, session) {
+    setSignedInFlag(!!session);
     if (session) {
       const name = await getDisplayName(session.user.id);
       renderSignedIn(slot, name);

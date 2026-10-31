@@ -84,6 +84,14 @@ header.site{
   display:flex; align-items:center; justify-content:space-between;
   padding:16px 0;
 }
+/* Three columns so the nav links sit in the true centre of the page,
+   not just midway between the logo and the buttons. The side columns
+   still grow to fit their content, so they never overlap the links. */
+@media (min-width:781px){
+  .nav{display:grid; grid-template-columns:1fr auto 1fr; gap:24px;}
+  .nav > .logo{justify-self:start;}
+  .nav > .header-actions{justify-self:end;}
+}
 .logo{
   display:flex; align-items:center; gap:10px;
   font-family:'Fraunces',serif; font-weight:600; font-size:22px;
@@ -604,7 +612,7 @@ footer a:hover{color:#fff;}
     </nav>
     <div class="header-actions">
       <div id="authSlot" class="auth-slot"></div>
-      <a href="get-started" class="btn btn-primary" style="padding:10px 20px; font-size:15px;">Get Started</a>
+      <a href="get-started" class="btn btn-primary" style="padding:10px 20px; font-size:15px;" data-signed-out-only>Get Started</a>
     </div>
   </div>
 </header>
@@ -711,7 +719,7 @@ footer a:hover{color:#fff;}
   </div>
 </section>
 
-<section class="about-section" style="padding-top:0;">
+<section class="about-section" style="padding-top:0;" data-signed-out-only>
   <div class="wrap">
     <div class="about-cta" data-reveal>
       <h2>Ready to write your story?</h2>

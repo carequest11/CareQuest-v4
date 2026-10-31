@@ -5,6 +5,10 @@
 
 .auth-slot{ display:flex; align-items:center; min-height:48px; }
 
+/* Sign-up prompts (e.g. "Get Started") that make no sense to someone
+   already logged in. js/authHeader.js sets the class on <html>. */
+html.cq-signed-in [data-signed-out-only]{ display:none !important; }
+
 .auth-btn{
   display:inline-flex;
   align-items:center;
