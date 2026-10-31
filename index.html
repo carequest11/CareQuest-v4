@@ -222,9 +222,10 @@ html.home-lock, body.home-lock{
 }
 
 /* ---- "As featured in" press belt, bottom of the home screen ----
-   The logo files are pre-processed single-colour (ink) cutouts of the
-   outlets' originals, so they share one treatment regardless of the
-   source backgrounds. The track holds the list twice and slides by
+   The logo files are the outlets' originals in full colour, trimmed
+   to the mark on a transparent background (HighOnCity keeps its dark
+   card as a rounded tile, since its white type can't sit on cream)
+   and padded to one shared file height. The track holds the list twice and slides by
    exactly half its width, so the loop has no visible seam; spacing is
    per-item padding rather than flex gap for the same reason. */
 .press-belt{
@@ -255,9 +256,7 @@ html.home-lock, body.home-lock{
 .press-list li{flex:none; padding:0 clamp(24px,3vw,40px);}
 .press-list img{
   display:block; height:40px; width:auto;
-  opacity:.72; transition:opacity .2s ease;
 }
-.press-list img:hover{opacity:1;}
 @keyframes press-scroll{
   from{transform:translateX(0);}
   to{transform:translateX(-50%);}
@@ -688,20 +687,20 @@ footer a:hover{color:#fff;}
     <div class="press-viewport">
       <div class="press-track">
         <ul class="press-list">
-          <li><img src="images/press-highoncity.png" alt="HighOnCity" width="510" height="96"></li>
+          <li><img src="images/press-highoncity.png" alt="HighOnCity" width="443" height="96"></li>
           <li><img src="images/press-northshorenews.png" alt="North Shore News" width="209" height="96"></li>
           <li><img src="images/press-castanet.png" alt="Castanet" width="464" height="96"></li>
           <li><img src="images/press-niagarafallsreview.png" alt="Niagara Falls Review" width="364" height="96"></li>
           <li><img src="images/press-pentictonherald.png" alt="Penticton Herald" width="607" height="96"></li>
-          <li><img src="images/press-wellandtribune.png" alt="Welland Tribune" width="398" height="96"></li>
+          <li><img src="images/press-wellandtribune.png" alt="Welland Tribune" width="399" height="96"></li>
         </ul>
         <ul class="press-list" aria-hidden="true">
-          <li><img src="images/press-highoncity.png" alt="" width="510" height="96"></li>
+          <li><img src="images/press-highoncity.png" alt="" width="443" height="96"></li>
           <li><img src="images/press-northshorenews.png" alt="" width="209" height="96"></li>
           <li><img src="images/press-castanet.png" alt="" width="464" height="96"></li>
           <li><img src="images/press-niagarafallsreview.png" alt="" width="364" height="96"></li>
           <li><img src="images/press-pentictonherald.png" alt="" width="607" height="96"></li>
-          <li><img src="images/press-wellandtribune.png" alt="" width="398" height="96"></li>
+          <li><img src="images/press-wellandtribune.png" alt="" width="399" height="96"></li>
         </ul>
       </div>
     </div>
