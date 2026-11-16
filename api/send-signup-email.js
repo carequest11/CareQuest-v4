@@ -51,8 +51,17 @@ module.exports = async (req, res) => {
     return;
   }
 
+  const parsed = readJsonBody(req);
+  if (parsed.error) {
+    // Logged without the body: it holds a new sign-up's contact details
+    // (and, for youth, a minor's), which shouldn't land in Vercel logs.
+    console.error('send-signup-email: could not parse request body', parsed.error);
+    res.status(400).json({ error: 'Could not parse request body', ...parsed.error });
+    return;
+  }
+
   try {
-    const { table, table_id: tableId, record } = req.body || {};
+    const { table, table_id: tableId, record } = parsed.body;
     if (table !== 'youth_profiles' && table !== 'senior_profiles') {
       res.status(400).json({ error: 'Unexpected table' });
       return;
@@ -115,6 +124,44 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: 'Unexpected server error' });
   }
 };
+
+// Vercel's req.body is a lazy getter: for Content-Type application/json
+// it runs JSON.parse on the buffered body the first time it's read and
+// throws its own ApiError(400, 'Invalid JSON') on failure, discarding
+// the parse error. The raw bytes aren't exposed and the request stream
+// is already drained (see daily-webhook.js), so this reports what is
+// available: Vercel's status/message plus the request headers that
+// describe the body. A text/plain body arrives as a raw string, which
+// is parsed here with the real JSON.parse error kept.
+function readJsonBody(req) {
+  const headers = {
+    content_type: req.headers['content-type'] || null,
+    content_length: req.headers['content-length'] || null,
+    content_encoding: req.headers['content-encoding'] || null,
+    user_agent: req.headers['user-agent'] || null
+  };
+
+  let body;
+  try {
+    body = req.body;
+  } catch (err) {
+    return { error: { status: err.statusCode || null, message: err.message, ...headers } };
+  }
+
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch (err) {
+      return { error: { status: 400, message: `JSON.parse: ${err.message}`, body_length: body.length, ...headers } };
+    }
+  }
+
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { error: { status: 400, message: `Expected a JSON object, got ${Array.isArray(body) ? 'array' : typeof body}`, ...headers } };
+  }
+
+  return { body };
+}
 
 // Table-editor link filtered to this one row. The project ref comes
 // from SUPABASE_URL (https://<ref>.supabase.co); the table id is the
