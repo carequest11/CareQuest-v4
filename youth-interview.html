@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="css/auth-header.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@^2.49.4/dist/umd/supabase.js"></script>
 <script src="js/supabaseClient.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
 <style>
 :root{
   --paper:#FBF5E9;
@@ -335,6 +336,7 @@ html.home-lock, body.home-lock{
 .acct-switch a{color:var(--teal); font-weight:500; text-decoration:none;}
 .acct-switch a:hover{text-decoration:underline;}
 .acct-submit{width:100%; margin-top:8px;}
+.booking-msg{font-size:18px; font-weight:500; color:var(--rust); margin:16px 0 0;}
 
 /* ===================================================
    LOGIN PAGE — LARGE / HIGH-CONTRAST / ACCESSIBLE
@@ -635,7 +637,8 @@ footer a:hover{color:#fff;}
     <div class="acct-submit-row">
       <p>Pick whichever time usually works best — the CareQuest team will follow up directly to confirm.</p>
     </div>
-    <a href="member" class="btn btn-rust acct-submit">Continue</a>
+    <p class="booking-msg" id="bookingMsg" role="alert" hidden></p>
+    <a href="member" class="btn btn-rust acct-submit" id="bookingContinue">Continue</a>
   </div>
 </div>
 
@@ -657,6 +660,9 @@ footer a:hover{color:#fff;}
     }
     tabs.forEach((tab, i) => {
       tab.textContent = dayAbbrevs[dates[i].getDay()] + ' ' + dates[i].getDate();
+      tab.dataset.year = dates[i].getFullYear();
+      tab.dataset.month = dates[i].getMonth() + 1;
+      tab.dataset.day = dates[i].getDate();
     });
   })();
 
@@ -671,6 +677,62 @@ footer a:hover{color:#fff;}
       document.querySelectorAll('.slot').forEach(s=>s.classList.remove('selected'));
       slot.classList.add('selected');
     });
+  });
+
+  // Save the picked slot, then continue to member. Writing
+  // interview_slot_at fires the trigger in the "Interview booking email"
+  // section of supabase-schema.sql, which emails the CareQuest team the
+  // youth's name and this time. Times are Vancouver time (everyone is
+  // assumed to be there for now) and stored in UTC, like visits.
+  const bookingMsg = document.getElementById('bookingMsg');
+  function showBookingMsg(text){
+    bookingMsg.textContent = text;
+    bookingMsg.hidden = false;
+  }
+
+  document.getElementById('bookingContinue').addEventListener('click', async (e)=>{
+    e.preventDefault();
+    const btn = e.currentTarget;
+    const day = document.querySelector('.day-tab.active');
+    const slot = document.querySelector('.slot.selected');
+    if(!day || !slot){
+      showBookingMsg('Please pick a day and a time first.');
+      return;
+    }
+
+    const match = slot.textContent.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if(!match){
+      showBookingMsg('Something went wrong with that time. Please pick another.');
+      return;
+    }
+    let hour = Number(match[1]) % 12;
+    if(match[3].toUpperCase() === 'PM') hour += 12;
+    const slotAt = luxon.DateTime.fromObject(
+      { year: Number(day.dataset.year), month: Number(day.dataset.month), day: Number(day.dataset.day), hour, minute: Number(match[2]) },
+      { zone: 'America/Vancouver' }
+    ).toUTC().toISO();
+
+    btn.setAttribute('aria-disabled', 'true');
+    btn.style.pointerEvents = 'none';
+    try {
+      const { data: { session } } = await cq.auth.getSession();
+      if(!session){
+        showBookingMsg('Please log in again to book your interview.');
+        return;
+      }
+      const { error } = await cq.from('youth_profiles')
+        .update({ interview_slot_at: slotAt })
+        .eq('id', session.user.id);
+      if(error){
+        console.error('Could not save interview slot:', error);
+        showBookingMsg('We couldn\'t save your interview time. Please try again.');
+        return;
+      }
+      window.location.href = 'member';
+    } finally {
+      btn.removeAttribute('aria-disabled');
+      btn.style.pointerEvents = '';
+    }
   });
 </script>
 

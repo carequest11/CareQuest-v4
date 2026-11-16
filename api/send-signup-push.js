@@ -31,6 +31,12 @@
 //      table's OID as table_id). Skipped, not an error, while
 //      RESEND_API_KEY is unset.
 //
+// Also emails staff when a youth books an interview slot: a second
+// trigger on youth_profiles (the "Interview booking email" section of
+// supabase-schema.sql) calls this same endpoint with type
+// 'INTERVIEW_BOOKED' when interview_slot_at changes. That request gets
+// only the interview email — no push, no sign-up email.
+//
 // This used to be a separate /api/send-signup-email (later
 // /api/signup-notify) route with its own trigger; Vercel failed every
 // request to it with "Invalid JSON" while this route parsed the
@@ -73,9 +79,19 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { table, table_id: tableId, record } = req.body || {};
+    const { type, table, table_id: tableId, record } = req.body || {};
     if (table !== 'youth_profiles' && table !== 'senior_profiles') {
       res.status(400).json({ error: 'Unexpected table' });
+      return;
+    }
+
+    if (type === 'INTERVIEW_BOOKED') {
+      if (table !== 'youth_profiles') {
+        res.status(400).json({ error: 'Interview bookings are youth only' });
+        return;
+      }
+      const interviewEmail = await sendInterviewEmail(tableId, record);
+      res.status(200).json({ ok: true, interview_email: interviewEmail });
       return;
     }
 
@@ -224,6 +240,42 @@ async function sendResendEmail(table, tableId, role, name, record) {
     rowLink ? `Open their row in Supabase: ${rowLink}` : `Supabase row: ${table}, id ${record?.id || '(unknown)'}`
   ].filter((line) => line !== null).join('\n');
 
+  return resendToStaff(`New ${role} sign-up: ${name || 'unnamed'}`, text, 'sign-up');
+}
+
+// Emails the staff inbox when a youth picks an interview slot on
+// youth-interview.html: their name and the time they picked (stored in
+// UTC as interview_slot_at, shown here in Vancouver time).
+async function sendInterviewEmail(tableId, record) {
+  if (!process.env.RESEND_API_KEY) return 'skipped';
+
+  const name = [record?.first_name, record?.last_name].filter(Boolean).join(' ');
+  const slot = record?.interview_slot_at
+    ? new Date(record.interview_slot_at).toLocaleString('en-CA', {
+        timeZone: 'America/Vancouver',
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        hour: 'numeric', minute: '2-digit'
+      })
+    : null;
+  const rowLink = supabaseRowLink(tableId, record?.id);
+
+  const text = [
+    `${name || 'A youth volunteer'} just picked an interview slot.`,
+    '',
+    `Name: ${name || '(not given)'}`,
+    `Interview time: ${slot ? `${slot} (Vancouver time)` : '(unknown)'}`,
+    '',
+    'They were told the CareQuest team will follow up directly to confirm.',
+    '',
+    rowLink ? `Open their row in Supabase: ${rowLink}` : `Supabase row: youth_profiles, id ${record?.id || '(unknown)'}`
+  ].join('\n');
+
+  return resendToStaff(`Interview booked: ${name || 'unnamed'}${slot ? ` — ${slot}` : ''}`, text, 'interview');
+}
+
+// One plain-text Resend email to the staff inbox. Returns its outcome
+// rather than throwing, so it can sit alongside the other channels.
+async function resendToStaff(subject, text, label) {
   try {
     const resendRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -234,18 +286,18 @@ async function sendResendEmail(table, tableId, role, name, record) {
       body: JSON.stringify({
         from: process.env.MESSAGE_EMAIL_FROM || 'CareQuest <notifications@carequest.info>',
         to: [STAFF_INBOX],
-        subject: `New ${role} sign-up: ${name || 'unnamed'}`,
+        subject,
         text
       })
     });
     if (!resendRes.ok) {
       const detail = (await resendRes.text()).slice(0, 300);
-      console.error('sign-up Resend email failed', resendRes.status, detail);
+      console.error(`${label} Resend email failed`, resendRes.status, detail);
       return `failed: ${resendRes.status} ${detail}`;
     }
     return 'sent';
   } catch (err) {
-    console.error('sign-up Resend email failed', err);
+    console.error(`${label} Resend email failed`, err);
     return `failed: ${String(err.message || err).slice(0, 300)}`;
   }
 }

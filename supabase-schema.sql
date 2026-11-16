@@ -1295,3 +1295,75 @@ revoke all on function public.notify_signup_push() from public, anon, authentica
 drop trigger if exists signup_email_youth on public.youth_profiles;
 drop trigger if exists signup_email_senior on public.senior_profiles;
 drop function if exists public.notify_signup_email();
+
+-- =========================================================
+-- Interview booking email
+--
+-- Run just this section; it's safe to re-run, and it's additive only
+-- (a new nullable column, a new function, a new trigger). Run it
+-- BEFORE deploying the youth-interview.html that writes the column,
+-- or Continue on that page will show "couldn't save your interview
+-- time" until it's applied.
+--
+-- youth-interview.html used to only display a slot picker; nothing was
+-- saved. It now writes the picked slot to interview_slot_at (UTC; the
+-- page treats slot times as America/Vancouver) through the existing
+-- "youth can update own profile" policy. When that value changes,
+-- this trigger calls /api/send-signup-push with type
+-- 'INTERVIEW_BOOKED', and the endpoint emails care1quest@gmail.com the
+-- youth's name and the time they picked (no push). Same Vault secret
+-- and error handling as the sign-up trigger: a missing secret or any
+-- error is a Postgres-log warning, never a failed save.
+-- =========================================================
+alter table public.youth_profiles
+  add column if not exists interview_slot_at timestamptz;
+
+create or replace function public.notify_interview_booked()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  webhook_secret text;
+begin
+  begin
+    select decrypted_secret into webhook_secret
+      from vault.decrypted_secrets
+      where name = 'signup_push_webhook_secret';
+
+    if webhook_secret is null or webhook_secret = '' then
+      raise warning 'notify_interview_booked: Vault secret "signup_push_webhook_secret" is missing — interview email NOT sent for %.%', TG_TABLE_NAME, new.id;
+      return new;
+    end if;
+
+    perform net.http_post(
+      url := 'https://carequest.info/api/send-signup-push',
+      body := jsonb_build_object(
+        'type', 'INTERVIEW_BOOKED',
+        'table', TG_TABLE_NAME,
+        'schema', TG_TABLE_SCHEMA,
+        'table_id', TG_RELID::bigint,
+        'record', to_jsonb(new)
+      ),
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'x-webhook-secret', webhook_secret
+      ),
+      timeout_milliseconds := 5000
+    );
+  exception when others then
+    raise warning 'notify_interview_booked failed: %', sqlerrm;
+  end;
+  return new;
+end;
+$$;
+
+revoke all on function public.notify_interview_booked() from public, anon, authenticated;
+
+create or replace trigger interview_booked_email
+  after update of interview_slot_at on public.youth_profiles
+  for each row
+  when (new.interview_slot_at is not null
+        and new.interview_slot_at is distinct from old.interview_slot_at)
+  execute function public.notify_interview_booked();
