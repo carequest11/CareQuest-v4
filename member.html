@@ -1287,6 +1287,11 @@ footer a:hover{color:#fff;}
           <button type="button" class="btn btn-primary" id="inlineChatSendBtn">Send</button>
         </div>
         <p style="margin-top:14px;"><a href="messages" style="color:var(--teal); font-weight:700; text-decoration:none; font-size:15px;">See full message history →</a></p>
+        <label class="consent-check" for="messageEmailCheck" style="margin:20px 0 0;">
+          <input type="checkbox" id="messageEmailCheck">
+          <span style="font-size:17px;">Email me when my match sends a message. The email won't include what they wrote.</span>
+        </label>
+        <p id="messageEmailStatus" style="margin-top:8px; font-size:15px; font-weight:700; display:none;"></p>
       </div>
 
       <!-- #callCard is inserted here (JS) for youth, appended into
@@ -2937,6 +2942,39 @@ footer a:hover{color:#fff;}
     if(p) p.textContent = message;
   }
 
+  // ---------------------------------------------------------
+  // Messages card: "Email me when my match sends a message" — the
+  // message_email_notifications column, saved as soon as it's ticked
+  // or unticked via the existing "update own profile" RLS policies.
+  // The unsubscribe link in those emails turns the same column off.
+  // ---------------------------------------------------------
+  function initMessageEmailToggle(enabled){
+    const check = document.getElementById('messageEmailCheck');
+    const statusEl = document.getElementById('messageEmailStatus');
+    check.checked = enabled;
+
+    check.addEventListener('change', async () => {
+      const wanted = check.checked;
+      check.disabled = true;
+      statusEl.style.display = 'none';
+
+      const table = currentRole === 'youth' ? 'youth_profiles' : 'senior_profiles';
+      const { error } = await cq.from(table).update({ message_email_notifications: wanted }).eq('id', currentUserId);
+      check.disabled = false;
+
+      if(error){
+        console.error('Could not save message email setting:', error);
+        check.checked = !wanted;
+        statusEl.textContent = 'Could not save this setting. Please try again.';
+        statusEl.style.color = 'var(--rust)';
+      } else {
+        statusEl.textContent = wanted ? 'Message emails are on ✓' : 'Message emails are off ✓';
+        statusEl.style.color = 'var(--teal-deep)';
+      }
+      statusEl.style.display = 'block';
+    });
+  }
+
   async function loadMember(){
     // Guard: if login.html just sent us here (it thought there WAS a
     // session), and our own check now disagrees and says there isn't
@@ -2973,8 +3011,8 @@ footer a:hover{color:#fff;}
       // point the matches query at the wrong column, and show
       // "No Match Yet" even when a match genuinely exists.
       const [{ data: youthProfile, error: youthProfileErr }, { data: seniorProfile, error: seniorProfileErr }] = await Promise.all([
-        cq.from('youth_profiles').select('first_name, last_name, phone, age, interests, languages, interview_status, avatar_url').eq('id', session.user.id).maybeSingle(),
-        cq.from('senior_profiles').select('full_name, phone, past_career, interests, languages, avatar_url').eq('id', session.user.id).maybeSingle()
+        cq.from('youth_profiles').select('first_name, last_name, phone, age, interests, languages, interview_status, avatar_url, message_email_notifications').eq('id', session.user.id).maybeSingle(),
+        cq.from('senior_profiles').select('full_name, phone, past_career, interests, languages, avatar_url, message_email_notifications').eq('id', session.user.id).maybeSingle()
       ]);
 
       if(youthProfileErr) console.error('youth_profiles lookup failed:', youthProfileErr);
@@ -3047,6 +3085,7 @@ footer a:hover{color:#fff;}
       document.getElementById('matchInfoCard').classList.remove('hidden');
       document.getElementById('inlineChatCard').classList.remove('hidden');
       document.getElementById('callCard').classList.remove('hidden');
+      initMessageEmailToggle((youthProfile || seniorProfile).message_email_notifications !== false);
 
       const { data: partner } = await cq.rpc('get_match_partner', { p_match_id: match.id });
       if(partner && partner[0]){

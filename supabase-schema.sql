@@ -865,3 +865,157 @@ drop trigger if exists signup_push_senior on public.senior_profiles;
 create trigger signup_push_senior
   after insert on public.senior_profiles
   for each row execute function public.notify_signup_push();
+
+-- =========================================================
+-- Message email notifications
+--
+-- Run just this section if the tables/policies above are already
+-- applied — every statement here is safe to re-run on its own. Run it
+-- before deploying the code that depends on it: js/authHeader.js
+-- calls touch_last_seen() on every signed-in page.
+--
+-- When a message is inserted, the recipient may get an email saying
+-- they have a new message from their match, linking to /messages.
+-- The email never contains the message text, and the trigger never
+-- sends it either: the request body is only { recipient_id,
+-- match_id }. All the gating happens here, so /api/send-message-email
+-- is only called when an email should actually go out:
+--   - the match is active,
+--   - the recipient hasn't turned message_email_notifications off,
+--   - the recipient hasn't been on the site in the last 3 minutes
+--     (last_seen_at, written by touch_last_seen() once a minute from
+--     any visible signed-in page), and
+--   - the recipient hasn't been emailed in the last 30 minutes.
+-- The last two checks and the claim of the 30-minute slot are a single
+-- insert ... on conflict do update ... where, so two messages arriving
+-- together can't both win and send two emails.
+--
+-- Same pg_net pattern as the sign-up push triggers above, with its own
+-- secret. Store it in Vault once (the same value as Vercel's
+-- MESSAGE_EMAIL_WEBHOOK_SECRET), separately from this section:
+--
+--   do $$
+--   declare existing uuid;
+--   begin
+--     select id into existing from vault.secrets
+--       where name = 'message_email_webhook_secret';
+--     if existing is null then
+--       perform vault.create_secret('<secret>', 'message_email_webhook_secret');
+--     else
+--       perform vault.update_secret(existing, '<secret>');
+--     end if;
+--   end $$;
+-- =========================================================
+
+-- Opt-out preference, on by default. Users change it themselves from
+-- member.html (via the existing "update own profile" policies), or by
+-- the unsubscribe link in every email (/api/unsubscribe).
+alter table public.youth_profiles
+  add column if not exists message_email_notifications boolean not null default true;
+alter table public.senior_profiles
+  add column if not exists message_email_notifications boolean not null default true;
+
+-- Presence and debounce bookkeeping, one row per user. RLS on with no
+-- policies: only touch_last_seen() and the trigger below (both
+-- SECURITY DEFINER) and the service role ever touch it.
+create table if not exists public.notification_state (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  last_seen_at timestamptz,
+  last_message_email_at timestamptz
+);
+
+alter table public.notification_state enable row level security;
+
+-- Called by js/authHeader.js once a minute while a signed-in page is
+-- visible. Can only ever stamp the caller's own row, with the server's
+-- clock.
+drop function if exists public.touch_last_seen();
+create function public.touch_last_seen()
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  insert into public.notification_state (user_id, last_seen_at)
+  select auth.uid(), now()
+  where auth.uid() is not null
+  on conflict (user_id) do update set last_seen_at = excluded.last_seen_at;
+$$;
+
+revoke all on function public.touch_last_seen() from public, anon;
+grant execute on function public.touch_last_seen() to authenticated;
+
+drop function if exists public.notify_message_email() cascade;
+create function public.notify_message_email()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  m record;
+  recipient uuid;
+  wants_email boolean;
+  claimed uuid;
+  webhook_secret text;
+begin
+  -- A notification problem must never block a message, so any error
+  -- here is downgraded to a warning and the insert goes through.
+  begin
+    select youth_id, senior_id, status into m
+      from public.matches where id = new.match_id;
+    if not found or m.status <> 'active' then
+      return new;
+    end if;
+
+    recipient := case when new.sender_id = m.youth_id then m.senior_id else m.youth_id end;
+
+    select coalesce(
+      (select message_email_notifications from public.youth_profiles where id = recipient),
+      (select message_email_notifications from public.senior_profiles where id = recipient),
+      false
+    ) into wants_email;
+    if not wants_email then
+      return new;
+    end if;
+
+    insert into public.notification_state as s (user_id, last_message_email_at)
+    values (recipient, now())
+    on conflict (user_id) do update
+      set last_message_email_at = excluded.last_message_email_at
+      where (s.last_message_email_at is null or s.last_message_email_at < now() - interval '30 minutes')
+        and (s.last_seen_at is null or s.last_seen_at < now() - interval '3 minutes')
+    returning user_id into claimed;
+    if claimed is null then
+      return new;
+    end if;
+
+    select decrypted_secret into webhook_secret
+      from vault.decrypted_secrets
+      where name = 'message_email_webhook_secret';
+
+    perform net.http_post(
+      url := 'https://carequest.info/api/send-message-email',
+      body := jsonb_build_object(
+        'recipient_id', recipient,
+        'match_id', new.match_id
+      ),
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'x-webhook-secret', coalesce(webhook_secret, '')
+      ),
+      timeout_milliseconds := 5000
+    );
+  exception when others then
+    raise warning 'notify_message_email failed: %', sqlerrm;
+  end;
+  return new;
+end;
+$$;
+
+revoke all on function public.notify_message_email() from public, anon, authenticated;
+
+drop trigger if exists message_email_notify on public.messages;
+create trigger message_email_notify
+  after insert on public.messages
+  for each row execute function public.notify_message_email();

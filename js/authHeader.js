@@ -9,6 +9,11 @@
 //
 // Also toggles `cq-signed-in` on <html>, which hides anything marked
 // data-signed-out-only (see css/auth-header.css).
+//
+// While signed in and the page is visible, it also calls
+// touch_last_seen() once a minute. That's how the message email
+// trigger knows someone is on the site and doesn't need an email (see
+// "Message email notifications" in supabase-schema.sql).
 (function () {
   function setSignedInFlag(on) {
     document.documentElement.classList.toggle('cq-signed-in', on);
@@ -72,8 +77,33 @@
     return 'Member';
   }
 
+  let heartbeatTimer = null;
+
+  function touchLastSeen() {
+    if (document.visibilityState !== 'visible') return;
+    cq.rpc('touch_last_seen').then(({ error }) => {
+      if (error) console.error('touch_last_seen failed:', error);
+    });
+  }
+
+  function setHeartbeat(on) {
+    if (on && !heartbeatTimer) {
+      touchLastSeen();
+      heartbeatTimer = setInterval(touchLastSeen, 60000);
+    } else if (!on && heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+  }
+
+  // Coming back to a tab counts straight away, not up to a minute later.
+  document.addEventListener('visibilitychange', () => {
+    if (heartbeatTimer) touchLastSeen();
+  });
+
   async function refresh(slot, session) {
     setSignedInFlag(!!session);
+    setHeartbeat(!!session);
     if (session) {
       const name = await getDisplayName(session.user.id);
       renderSignedIn(slot, name);
