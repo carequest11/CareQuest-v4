@@ -1,4 +1,4 @@
-// POST /api/send-signup-email
+// POST /api/signup-notify
 //
 // Called by the pg_net triggers on youth_profiles and senior_profiles
 // (see the "Sign-up email notifications" section of
@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
   // wrong secret in net._http_response.
   const expectedSecret = process.env.SIGNUP_EMAIL_WEBHOOK_SECRET;
   if (!expectedSecret) {
-    console.error('send-signup-email: SIGNUP_EMAIL_WEBHOOK_SECRET is not set; refusing request');
+    console.error('signup-notify: SIGNUP_EMAIL_WEBHOOK_SECRET is not set; refusing request');
     res.status(500).json({ error: 'Webhook secret is not configured' });
     return;
   }
@@ -46,7 +46,7 @@ module.exports = async (req, res) => {
   }
 
   if (!process.env.RESEND_API_KEY) {
-    console.error('send-signup-email: RESEND_API_KEY is not set');
+    console.error('signup-notify: RESEND_API_KEY is not set');
     res.status(500).json({ error: 'Email is not configured' });
     return;
   }
@@ -55,7 +55,7 @@ module.exports = async (req, res) => {
   if (parsed.error) {
     // Logged without the body: it holds a new sign-up's contact details
     // (and, for youth, a minor's), which shouldn't land in Vercel logs.
-    console.error('send-signup-email: could not parse request body', parsed.error);
+    console.error('signup-notify: could not parse request body', parsed.error);
     res.status(400).json({ error: 'Could not parse request body', ...parsed.error });
     return;
   }
@@ -113,14 +113,14 @@ module.exports = async (req, res) => {
 
     if (!resendRes.ok) {
       const detail = (await resendRes.text()).slice(0, 300);
-      console.error('send-signup-email: Resend send failed', resendRes.status, detail);
+      console.error('signup-notify: Resend send failed', resendRes.status, detail);
       res.status(502).json({ error: 'Resend send failed', status: resendRes.status, detail });
       return;
     }
 
     res.status(200).json({ ok: true, email: 'sent' });
   } catch (err) {
-    console.error('send-signup-email failed', err);
+    console.error('signup-notify failed', err);
     res.status(500).json({ error: 'Unexpected server error' });
   }
 };

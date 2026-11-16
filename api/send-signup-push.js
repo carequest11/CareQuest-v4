@@ -64,7 +64,7 @@ module.exports = async (req, res) => {
   try {
     const { table, record } = req.body || {};
     if (table !== 'youth_profiles' && table !== 'senior_profiles') {
-      // Same header fields /api/send-signup-email reports when it can't
+      // Same header fields /api/signup-notify reports when it can't
       // parse a body, so a probe with table "probe" (see the debugging
       // notes) can compare what each route actually received. Headers
       // only — never the body, which holds sign-up contact details.

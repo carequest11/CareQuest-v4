@@ -1162,3 +1162,64 @@ create or replace trigger signup_email_youth
 create or replace trigger signup_email_senior
   after insert on public.senior_profiles
   for each row execute function public.notify_signup_email();
+
+-- =========================================================
+-- Sign-up email: move to /api/signup-notify
+--
+-- Run just this section; it's safe to re-run. Supersedes the URL in
+-- notify_signup_email() from the "Sign-up email notifications"
+-- section above — if you re-run that section, re-run this one after.
+--
+-- /api/send-signup-email failed every request with Vercel's "Invalid
+-- JSON" while /api/send-signup-push parsed the identical pg_net
+-- request (same bytes, same transaction, either order), and the
+-- failing route saw User-Agent and Content-Length as missing. The
+-- route was renamed to rule out something stuck on that one function
+-- path. Same function, triggers, Vault secret and env var; only the
+-- URL changes. create or replace only, so the triggers keep pointing
+-- at the function throughout.
+-- =========================================================
+create or replace function public.notify_signup_email()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  webhook_secret text;
+begin
+  -- A notification problem must never block a sign-up, so any error
+  -- here is downgraded to a warning and the insert goes through.
+  begin
+    select decrypted_secret into webhook_secret
+      from vault.decrypted_secrets
+      where name = 'signup_email_webhook_secret';
+
+    if webhook_secret is null or webhook_secret = '' then
+      raise warning 'notify_signup_email: Vault secret "signup_email_webhook_secret" is missing — sign-up email NOT sent for %.%', TG_TABLE_NAME, new.id;
+      return new;
+    end if;
+
+    perform net.http_post(
+      url := 'https://carequest.info/api/signup-notify',
+      body := jsonb_build_object(
+        'type', 'INSERT',
+        'table', TG_TABLE_NAME,
+        'schema', TG_TABLE_SCHEMA,
+        'table_id', TG_RELID::bigint,
+        'record', to_jsonb(new)
+      ),
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'x-webhook-secret', webhook_secret
+      ),
+      timeout_milliseconds := 5000
+    );
+  exception when others then
+    raise warning 'notify_signup_email failed: %', sqlerrm;
+  end;
+  return new;
+end;
+$$;
+
+revoke all on function public.notify_signup_email() from public, anon, authenticated;
