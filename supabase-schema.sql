@@ -1367,3 +1367,52 @@ create or replace trigger interview_booked_email
   when (new.interview_slot_at is not null
         and new.interview_slot_at is distinct from old.interview_slot_at)
   execute function public.notify_interview_booked();
+
+-- =========================================================
+-- Interview slot picker: taken slots + one youth per slot
+--
+-- Run just this section; it's safe to re-run. Requires the "Interview
+-- booking email" section above (the interview_slot_at column).
+--
+-- youth-interview.html offers hourly slots, 8:00 AM to 10:00 PM
+-- Vancouver time, and disables any slot another youth already holds.
+--
+-- 1. A partial unique index: no two youth can hold the same
+--    interview_slot_at. This is the real guard against two people
+--    picking the same slot at once — the second save fails with a
+--    unique violation (23505), which the page shows as "that time was
+--    just taken". It would fail to build if two youth already share a
+--    slot, so check first:
+--
+--      select interview_slot_at, count(*)
+--        from public.youth_profiles
+--        where interview_slot_at is not null
+--        group by 1 having count(*) > 1;
+--
+-- 2. get_taken_interview_slots(): SECURITY DEFINER so it can see other
+--    youth's rows, but returns only the booked times — never ids,
+--    names or anything else — within a window of at most 31 days. The
+--    caller's own booking is left out, so they can keep or re-pick it.
+-- =========================================================
+create unique index if not exists youth_profiles_interview_slot_at_key
+  on public.youth_profiles (interview_slot_at)
+  where interview_slot_at is not null;
+
+create or replace function public.get_taken_interview_slots(from_ts timestamptz, to_ts timestamptz)
+returns table (slot_at timestamptz)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select distinct y.interview_slot_at
+    from public.youth_profiles y
+    where y.interview_slot_at >= from_ts
+      and y.interview_slot_at < to_ts
+      and to_ts - from_ts <= interval '31 days'
+      and y.id is distinct from auth.uid()
+    order by 1;
+$$;
+
+revoke all on function public.get_taken_interview_slots(timestamptz, timestamptz) from public, anon;
+grant execute on function public.get_taken_interview_slots(timestamptz, timestamptz) to authenticated;

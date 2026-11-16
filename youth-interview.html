@@ -623,15 +623,11 @@ footer a:hover{color:#fff;}
       <div class="day-tab">Wed 23</div>
       <div class="day-tab">Thu 24</div>
     </div>
-    <div class="slot-grid" id="slotGrid">
-      <div class="slot">9:00 AM</div>
-      <div class="slot">10:00 AM</div>
-      <div class="slot disabled">11:00 AM</div>
-      <div class="slot">1:00 PM</div>
-      <div class="slot">2:30 PM</div>
-      <div class="slot disabled">3:30 PM</div>
-      <div class="slot">4:00 PM</div>
-      <div class="slot">5:00 PM</div>
+    <div class="field" style="margin-top:20px; margin-bottom:0;">
+      <label for="slotSelect">Time <span class="field-hint">Vancouver time</span></label>
+      <select id="slotSelect">
+        <option value="">Loading times…</option>
+      </select>
     </div>
 
     <div class="acct-submit-row">
@@ -666,51 +662,102 @@ footer a:hover{color:#fff;}
     });
   })();
 
-  document.querySelectorAll('.day-tab').forEach(tab=>{
-    tab.addEventListener('click', ()=>{
-      document.querySelectorAll('.day-tab').forEach(t=>t.classList.remove('active'));
-      tab.classList.add('active');
-    });
-  });
-  document.querySelectorAll('.slot:not(.disabled)').forEach(slot=>{
-    slot.addEventListener('click', ()=>{
-      document.querySelectorAll('.slot').forEach(s=>s.classList.remove('selected'));
-      slot.classList.add('selected');
-    });
-  });
-
-  // Save the picked slot, then continue to member. Writing
-  // interview_slot_at fires the trigger in the "Interview booking email"
-  // section of supabase-schema.sql, which emails the CareQuest team the
-  // youth's name and this time. Times are Vancouver time (everyone is
-  // assumed to be there for now) and stored in UTC, like visits.
+  // ---------------------------------------------------------
+  // Interview time dropdown: hourly slots 8:00 AM – 10:00 PM Vancouver
+  // time on the selected day. Slots another youth has already booked
+  // come from get_taken_interview_slots() — times only, never who
+  // booked them — and are shown disabled. A unique index on
+  // youth_profiles.interview_slot_at is what actually stops two people
+  // holding the same slot: if someone books it between this page
+  // loading and Continue, the save fails with 23505 and the youth is
+  // told it was just taken. See the "Interview slot picker" section of
+  // supabase-schema.sql.
+  // ---------------------------------------------------------
+  const FIRST_HOUR = 8, LAST_HOUR = 22; // 8:00 AM to 10:00 PM inclusive
+  const ZONE = 'America/Vancouver';
+  const slotSelect = document.getElementById('slotSelect');
   const bookingMsg = document.getElementById('bookingMsg');
+  let takenSlots = new Set(); // epoch ms
+
   function showBookingMsg(text){
     bookingMsg.textContent = text;
     bookingMsg.hidden = false;
   }
+  function hideBookingMsg(){ bookingMsg.hidden = true; }
 
+  function dayOf(tab){
+    return luxon.DateTime.fromObject(
+      { year: Number(tab.dataset.year), month: Number(tab.dataset.month), day: Number(tab.dataset.day) },
+      { zone: ZONE }
+    );
+  }
+
+  async function loadTakenSlots(){
+    const tabs = Array.from(document.querySelectorAll('.day-tab'));
+    const from = dayOf(tabs[0]).startOf('day').toUTC().toISO();
+    const to = dayOf(tabs[tabs.length - 1]).endOf('day').toUTC().toISO();
+    const { data, error } = await cq.rpc('get_taken_interview_slots', { from_ts: from, to_ts: to });
+    if(error){
+      // Still bookable: the unique index catches a clash at save time.
+      console.error('Could not load booked interview times:', error);
+      return;
+    }
+    takenSlots = new Set((data || []).map(row => Date.parse(row.slot_at)));
+  }
+
+  function renderSlots(){
+    const tab = document.querySelector('.day-tab.active');
+    const previous = slotSelect.value;
+    const day = dayOf(tab);
+    slotSelect.innerHTML = '';
+
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Choose a time';
+    slotSelect.appendChild(placeholder);
+
+    for(let hour = FIRST_HOUR; hour <= LAST_HOUR; hour++){
+      const slot = day.set({ hour, minute: 0, second: 0, millisecond: 0 });
+      const opt = document.createElement('option');
+      opt.value = slot.toUTC().toISO();
+      const label = slot.toFormat('h:mm a');
+      if(takenSlots.has(slot.toMillis())){
+        opt.disabled = true;
+        opt.textContent = label + ' (taken)';
+      } else {
+        opt.textContent = label;
+      }
+      slotSelect.appendChild(opt);
+    }
+
+    const keep = Array.from(slotSelect.options).find(o => o.value === previous && !o.disabled);
+    slotSelect.value = keep ? previous : '';
+  }
+
+  document.querySelectorAll('.day-tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.day-tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      hideBookingMsg();
+      renderSlots();
+    });
+  });
+  slotSelect.addEventListener('change', hideBookingMsg);
+
+  loadTakenSlots().then(renderSlots);
+
+  // Save the picked slot, then continue to member. Writing
+  // interview_slot_at fires the interview_booked_email trigger, which
+  // emails the CareQuest team this youth's details and the slot.
   document.getElementById('bookingContinue').addEventListener('click', async (e)=>{
     e.preventDefault();
     const btn = e.currentTarget;
-    const day = document.querySelector('.day-tab.active');
-    const slot = document.querySelector('.slot.selected');
-    if(!day || !slot){
+    const slotAt = slotSelect.value;
+    if(!slotAt){
       showBookingMsg('Please pick a day and a time first.');
+      slotSelect.focus();
       return;
     }
-
-    const match = slot.textContent.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-    if(!match){
-      showBookingMsg('Something went wrong with that time. Please pick another.');
-      return;
-    }
-    let hour = Number(match[1]) % 12;
-    if(match[3].toUpperCase() === 'PM') hour += 12;
-    const slotAt = luxon.DateTime.fromObject(
-      { year: Number(day.dataset.year), month: Number(day.dataset.month), day: Number(day.dataset.day), hour, minute: Number(match[2]) },
-      { zone: 'America/Vancouver' }
-    ).toUTC().toISO();
 
     btn.setAttribute('aria-disabled', 'true');
     btn.style.pointerEvents = 'none';
@@ -724,6 +771,15 @@ footer a:hover{color:#fff;}
         .update({ interview_slot_at: slotAt })
         .eq('id', session.user.id);
       if(error){
+        if(error.code === '23505'){
+          // Someone else booked this exact slot since the list loaded.
+          await loadTakenSlots();
+          takenSlots.add(Date.parse(slotAt));
+          renderSlots();
+          showBookingMsg('Sorry — that time was just taken by someone else. Please pick another time.');
+          slotSelect.focus();
+          return;
+        }
         console.error('Could not save interview slot:', error);
         showBookingMsg('We couldn\'t save your interview time. Please try again.');
         return;
