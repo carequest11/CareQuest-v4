@@ -31,11 +31,13 @@
 //      table's OID as table_id). Skipped, not an error, while
 //      RESEND_API_KEY is unset.
 //
-// Also emails staff when a youth books an interview slot: a second
-// trigger on youth_profiles (the "Interview booking email" section of
-// supabase-schema.sql) calls this same endpoint with type
-// 'INTERVIEW_BOOKED' when interview_slot_at changes. That request gets
-// only the interview email — no push, no sign-up email.
+// Youth get no email at sign-up (the push still goes out): their one
+// staff email is sent when they book an interview slot instead, with
+// their details and the slot. A second trigger on youth_profiles (the
+// "Interview booking email" section of supabase-schema.sql) calls this
+// same endpoint with type 'INTERVIEW_BOOKED' when interview_slot_at
+// changes; that request gets only that email, no push. Seniors have no
+// interview step, so they keep their email at sign-up.
 //
 // This used to be a separate /api/send-signup-email (later
 // /api/signup-notify) route with its own trigger; Vercel failed every
@@ -107,11 +109,14 @@ module.exports = async (req, res) => {
     });
 
     // Every channel runs side by side and reports separately, so a
-    // problem with one never stops the others from going out.
+    // problem with one never stops the others from going out. Youth
+    // emails wait for the interview booking (see sendInterviewEmail).
+    const isYouth = table === 'youth_profiles';
+    const youthSkip = 'skipped: youth are emailed when they book an interview';
     const [push, email, resendEmail] = await Promise.all([
       sendPushes(payload),
-      sendEmail(role, name, record),
-      sendResendEmail(table, tableId, role, name, record)
+      isYouth ? youthSkip : sendEmail(role, name, record),
+      isYouth ? youthSkip : sendResendEmail(table, tableId, role, name, record)
     ]);
 
     res.status(200).json({ ok: true, ...push, email, resend_email: resendEmail });
@@ -243,9 +248,10 @@ async function sendResendEmail(table, tableId, role, name, record) {
   return resendToStaff(`New ${role} sign-up: ${name || 'unnamed'}`, text, 'sign-up');
 }
 
-// Emails the staff inbox when a youth picks an interview slot on
-// youth-interview.html: their name and the time they picked (stored in
-// UTC as interview_slot_at, shown here in Vancouver time).
+// The one staff email for a youth, sent when they pick an interview
+// slot on youth-interview.html: their details plus the time they
+// picked (stored in UTC as interview_slot_at, shown here in Vancouver
+// time). Picking a different slot later sends it again.
 async function sendInterviewEmail(tableId, record) {
   if (!process.env.RESEND_API_KEY) return 'skipped';
 
@@ -260,9 +266,13 @@ async function sendInterviewEmail(tableId, record) {
   const rowLink = supabaseRowLink(tableId, record?.id);
 
   const text = [
-    `${name || 'A youth volunteer'} just picked an interview slot.`,
+    `A new youth volunteer just booked an interview and is waiting to be matched and verified.`,
     '',
     `Name: ${name || '(not given)'}`,
+    `Email: ${record?.email || '(not given)'}`,
+    `Phone: ${record?.phone || '(not given)'}`,
+    `Age: ${record?.age ?? '(not given)'}`,
+    `Interests: ${record?.interests || '(not given)'}`,
     `Interview time: ${slot ? `${slot} (Vancouver time)` : '(unknown)'}`,
     '',
     'They were told the CareQuest team will follow up directly to confirm.',
@@ -270,7 +280,7 @@ async function sendInterviewEmail(tableId, record) {
     rowLink ? `Open their row in Supabase: ${rowLink}` : `Supabase row: youth_profiles, id ${record?.id || '(unknown)'}`
   ].join('\n');
 
-  return resendToStaff(`Interview booked: ${name || 'unnamed'}${slot ? ` — ${slot}` : ''}`, text, 'interview');
+  return resendToStaff(`New Youth sign-up, interview booked: ${name || 'unnamed'}${slot ? ` — ${slot}` : ''}`, text, 'interview');
 }
 
 // One plain-text Resend email to the staff inbox. Returns its outcome
