@@ -1223,3 +1223,75 @@ end;
 $$;
 
 revoke all on function public.notify_signup_email() from public, anon, authenticated;
+
+-- =========================================================
+-- Sign-up email folded into the push trigger
+--
+-- Run just this section; it's safe to re-run. It supersedes the two
+-- sections above ("Sign-up email notifications" and "Sign-up email:
+-- move to /api/signup-notify"): if you ever re-run those, re-run this
+-- one afterwards, or the separate email trigger comes back.
+--
+-- Vercel failed every request to the separate email route (under
+-- both of its paths) with "Invalid JSON" while /api/send-signup-push
+-- parsed the identical pg_net request. So the Resend email now goes
+-- out from /api/send-signup-push, alongside the Web Push alert, from
+-- the one request this trigger already makes.
+--
+-- 1. notify_signup_push() also sends table_id (TG_RELID), which the
+--    endpoint uses for the email's direct link to the row in the
+--    Supabase table editor. Same secret, URL and error handling.
+-- 2. The separate email triggers and their function are dropped.
+--
+-- The Vault secret "signup_email_webhook_secret" is no longer read by
+-- anything. Delete it from Vault by hand if you want it gone; it's
+-- left out of this section because deleting a secret can't be undone.
+-- =========================================================
+create or replace function public.notify_signup_push()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  webhook_secret text;
+begin
+  -- A notification problem must never block a sign-up, so any error
+  -- here is downgraded to a warning and the insert goes through.
+  begin
+    select decrypted_secret into webhook_secret
+      from vault.decrypted_secrets
+      where name = 'signup_push_webhook_secret';
+
+    if webhook_secret is null or webhook_secret = '' then
+      raise warning 'notify_signup_push: Vault secret "signup_push_webhook_secret" is missing — sign-up push/email NOT sent for %.%', TG_TABLE_NAME, new.id;
+      return new;
+    end if;
+
+    perform net.http_post(
+      url := 'https://carequest.info/api/send-signup-push',
+      body := jsonb_build_object(
+        'type', 'INSERT',
+        'table', TG_TABLE_NAME,
+        'schema', TG_TABLE_SCHEMA,
+        'table_id', TG_RELID::bigint,
+        'record', to_jsonb(new)
+      ),
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'x-webhook-secret', webhook_secret
+      ),
+      timeout_milliseconds := 5000
+    );
+  exception when others then
+    raise warning 'notify_signup_push failed: %', sqlerrm;
+  end;
+  return new;
+end;
+$$;
+
+revoke all on function public.notify_signup_push() from public, anon, authenticated;
+
+drop trigger if exists signup_email_youth on public.youth_profiles;
+drop trigger if exists signup_email_senior on public.senior_profiles;
+drop function if exists public.notify_signup_email();

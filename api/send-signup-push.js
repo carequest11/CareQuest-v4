@@ -24,6 +24,17 @@
 //      SIGNUP_EMAIL_APP_PASSWORD (a Google app password for it) and,
 //      if it should go somewhere else, SIGNUP_EMAIL_TO — see
 //      .env.example.
+//   6. Staff email through Resend (the main email alert): needs only
+//      RESEND_API_KEY (shared with send-message-email.js). Goes to
+//      care1quest@gmail.com with the person's details and a direct link
+//      to their row in the Supabase table editor (the trigger sends the
+//      table's OID as table_id). Skipped, not an error, while
+//      RESEND_API_KEY is unset.
+//
+// This used to be a separate /api/send-signup-email (later
+// /api/signup-notify) route with its own trigger; Vercel failed every
+// request to it with "Invalid JSON" while this route parsed the
+// identical pg_net request, so the email was folded in here instead.
 const { createClient } = require('@supabase/supabase-js');
 const webpush = require('web-push');
 const nodemailer = require('nodemailer');
@@ -62,19 +73,9 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { table, record } = req.body || {};
+    const { table, table_id: tableId, record } = req.body || {};
     if (table !== 'youth_profiles' && table !== 'senior_profiles') {
-      // Same header fields /api/signup-notify reports when it can't
-      // parse a body, so a probe with table "probe" (see the debugging
-      // notes) can compare what each route actually received. Headers
-      // only — never the body, which holds sign-up contact details.
-      res.status(400).json({
-        error: 'Unexpected table',
-        content_type: req.headers['content-type'] || null,
-        content_length: req.headers['content-length'] || null,
-        content_encoding: req.headers['content-encoding'] || null,
-        user_agent: req.headers['user-agent'] || null
-      });
+      res.status(400).json({ error: 'Unexpected table' });
       return;
     }
 
@@ -89,14 +90,15 @@ module.exports = async (req, res) => {
       url: '/member'
     });
 
-    // Push and email run side by side and report separately, so a
-    // problem with one channel never stops the other from going out.
-    const [push, email] = await Promise.all([
+    // Every channel runs side by side and reports separately, so a
+    // problem with one never stops the others from going out.
+    const [push, email, resendEmail] = await Promise.all([
       sendPushes(payload),
-      sendEmail(role, name, record)
+      sendEmail(role, name, record),
+      sendResendEmail(table, tableId, role, name, record)
     ]);
 
-    res.status(200).json({ ok: true, ...push, email });
+    res.status(200).json({ ok: true, ...push, email, resend_email: resendEmail });
   } catch (err) {
     res.status(500).json({ error: 'Unexpected server error' });
   }
@@ -189,4 +191,76 @@ async function sendEmail(role, name, record) {
     console.error('sign-up email failed', err);
     return `failed: ${String(err.message || err).slice(0, 300)}`;
   }
+}
+
+// Emails the staff inbox through Resend — the main sign-up email (the
+// Gmail sendEmail above is older and dormant unless its env vars are
+// set). Plain text only, so nothing a user typed into their profile
+// can render as HTML in the inbox. Carries a new youth's contact
+// details and age, so it goes only to the staff inbox below. Returns
+// its outcome rather than throwing, like the other channels.
+const STAFF_INBOX = 'care1quest@gmail.com';
+
+async function sendResendEmail(table, tableId, role, name, record) {
+  if (!process.env.RESEND_API_KEY) return 'skipped';
+
+  const isYouth = table === 'youth_profiles';
+  const signedUpAt = record?.created_at
+    ? new Date(record.created_at).toLocaleString('en-CA', { timeZone: 'America/Vancouver' })
+    : null;
+  const rowLink = supabaseRowLink(tableId, record?.id);
+
+  const text = [
+    `A new ${role.toLowerCase()} just signed up for CareQuest and is waiting to be matched and verified.`,
+    '',
+    `Name: ${name || '(not given)'}`,
+    `Role: ${role}`,
+    `Email: ${record?.email || '(not given)'}`,
+    `Phone: ${record?.phone || '(not given)'}`,
+    isYouth ? `Age: ${record?.age ?? '(not given)'}` : null,
+    `Interests: ${record?.interests || '(not given)'}`,
+    `Signed up: ${signedUpAt ? `${signedUpAt} (Vancouver time)` : '(unknown)'}`,
+    '',
+    rowLink ? `Open their row in Supabase: ${rowLink}` : `Supabase row: ${table}, id ${record?.id || '(unknown)'}`
+  ].filter((line) => line !== null).join('\n');
+
+  try {
+    const resendRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: process.env.MESSAGE_EMAIL_FROM || 'CareQuest <notifications@carequest.info>',
+        to: [STAFF_INBOX],
+        subject: `New ${role} sign-up: ${name || 'unnamed'}`,
+        text
+      })
+    });
+    if (!resendRes.ok) {
+      const detail = (await resendRes.text()).slice(0, 300);
+      console.error('sign-up Resend email failed', resendRes.status, detail);
+      return `failed: ${resendRes.status} ${detail}`;
+    }
+    return 'sent';
+  } catch (err) {
+    console.error('sign-up Resend email failed', err);
+    return `failed: ${String(err.message || err).slice(0, 300)}`;
+  }
+}
+
+// Table-editor link filtered to this one row. The project ref comes
+// from SUPABASE_URL (https://<ref>.supabase.co); the table id is the
+// table's OID, which the trigger sends as table_id (TG_RELID).
+function supabaseRowLink(tableId, rowId) {
+  let ref;
+  try {
+    ref = new URL(process.env.SUPABASE_URL).hostname.split('.')[0];
+  } catch (err) {
+    return null;
+  }
+  if (!ref || !tableId || !rowId) return null;
+  const filter = encodeURIComponent(`id:eq:${rowId}`);
+  return `https://supabase.com/dashboard/project/${ref}/editor/${tableId}?schema=public&filter=${filter}`;
 }
