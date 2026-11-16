@@ -45,11 +45,18 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // Supabase's own validation ping when the webhook is first created
-  // isn't signed with a header we control, so (like daily-webhook.js)
-  // we only enforce the secret once one has actually been configured.
+  // Fails closed: with no secret configured, nobody can call this (it
+  // used to fail open for the dashboard webhook's unsigned setup ping,
+  // but that webhook was replaced by the pg_net triggers). The 500
+  // (not 401) makes a missing Vercel env var distinguishable from a
+  // wrong secret in net._http_response.
   const expectedSecret = process.env.SIGNUP_PUSH_WEBHOOK_SECRET;
-  if (expectedSecret && req.headers['x-webhook-secret'] !== expectedSecret) {
+  if (!expectedSecret) {
+    console.error('send-signup-push: SIGNUP_PUSH_WEBHOOK_SECRET is not set; refusing request');
+    res.status(500).json({ error: 'Webhook secret is not configured' });
+    return;
+  }
+  if (req.headers['x-webhook-secret'] !== expectedSecret) {
     res.status(401).json({ error: 'Invalid webhook secret' });
     return;
   }

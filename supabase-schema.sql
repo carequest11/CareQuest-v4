@@ -740,8 +740,8 @@ grant execute on function public.record_recording_consent() to authenticated;
 -- One row per browser/device a staff member has enabled sign-up
 -- alerts on (Web Push subscription). Populated by member.html when a
 -- staff account clicks "Enable sign-up alerts"; read by
--- /api/send-signup-push (service role) when a Supabase Database
--- Webhook fires on insert into youth_profiles/senior_profiles.
+-- /api/send-signup-push (service role) when the pg_net triggers below
+-- fire on insert into youth_profiles/senior_profiles.
 -- =========================================================
 create table if not exists public.push_subscriptions (
   id uuid primary key default gen_random_uuid(),
@@ -789,6 +789,11 @@ create policy "staff can delete their own push subscriptions"
 --
 -- Run just this section if the tables/policies above are already
 -- applied — every statement here is safe to re-run on its own.
+--
+-- NOTE: notify_signup_push() is redefined by the "Sign-up email
+-- notifications" section further down (it now refuses to send, with a
+-- warning, when the Vault secret is missing). If you re-run this
+-- section, re-run that one afterwards.
 --
 -- The dashboard's Database Webhooks form fails on this project
 -- ("schema supabase_functions does not exist"), so these triggers do
@@ -1019,3 +1024,141 @@ drop trigger if exists message_email_notify on public.messages;
 create trigger message_email_notify
   after insert on public.messages
   for each row execute function public.notify_message_email();
+
+-- =========================================================
+-- Sign-up email notifications (Resend), and a louder sign-up push
+-- trigger
+--
+-- Run just this section if the sections above are already applied —
+-- every statement here is safe to re-run on its own, and nothing in
+-- it drops anything (create or replace only), so the existing push
+-- triggers keep working throughout.
+--
+-- 1. notify_signup_email(): a second pg_net trigger on each profile
+--    table that POSTs the new row to /api/send-signup-email, which
+--    emails the staff inbox through Resend. Separate from the push
+--    trigger, with its own Vault secret, so either can fail alone.
+--    The body also carries table_id (TG_RELID) so the email can link
+--    straight to the row in the Supabase table editor.
+--
+-- 2. notify_signup_push() is redefined so a missing Vault secret no
+--    longer sends an empty x-webhook-secret header (which got a quiet
+--    401 back). Both functions now skip the request and raise a
+--    warning naming the missing secret — visible in the Postgres logs
+--    (Dashboard -> Logs -> Postgres, search "Vault secret"). They
+--    deliberately don't raise an error: that would roll back the
+--    profile insert and break sign-up itself.
+--
+-- Store the email secret in Vault once (the same value as Vercel's
+-- SIGNUP_EMAIL_WEBHOOK_SECRET), separately from this section:
+--
+--   do $$
+--   declare existing uuid;
+--   begin
+--     select id into existing from vault.secrets
+--       where name = 'signup_email_webhook_secret';
+--     if existing is null then
+--       perform vault.create_secret('<secret>', 'signup_email_webhook_secret');
+--     else
+--       perform vault.update_secret(existing, '<secret>');
+--     end if;
+--   end $$;
+-- =========================================================
+create extension if not exists pg_net with schema extensions;
+
+create or replace function public.notify_signup_push()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  webhook_secret text;
+begin
+  -- A notification problem must never block a sign-up, so any error
+  -- here is downgraded to a warning and the insert goes through.
+  begin
+    select decrypted_secret into webhook_secret
+      from vault.decrypted_secrets
+      where name = 'signup_push_webhook_secret';
+
+    if webhook_secret is null or webhook_secret = '' then
+      raise warning 'notify_signup_push: Vault secret "signup_push_webhook_secret" is missing — sign-up push NOT sent for %.%', TG_TABLE_NAME, new.id;
+      return new;
+    end if;
+
+    perform net.http_post(
+      url := 'https://carequest.info/api/send-signup-push',
+      body := jsonb_build_object(
+        'type', 'INSERT',
+        'table', TG_TABLE_NAME,
+        'schema', TG_TABLE_SCHEMA,
+        'record', to_jsonb(new)
+      ),
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'x-webhook-secret', webhook_secret
+      ),
+      timeout_milliseconds := 5000
+    );
+  exception when others then
+    raise warning 'notify_signup_push failed: %', sqlerrm;
+  end;
+  return new;
+end;
+$$;
+
+revoke all on function public.notify_signup_push() from public, anon, authenticated;
+
+create or replace function public.notify_signup_email()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  webhook_secret text;
+begin
+  -- A notification problem must never block a sign-up, so any error
+  -- here is downgraded to a warning and the insert goes through.
+  begin
+    select decrypted_secret into webhook_secret
+      from vault.decrypted_secrets
+      where name = 'signup_email_webhook_secret';
+
+    if webhook_secret is null or webhook_secret = '' then
+      raise warning 'notify_signup_email: Vault secret "signup_email_webhook_secret" is missing — sign-up email NOT sent for %.%', TG_TABLE_NAME, new.id;
+      return new;
+    end if;
+
+    perform net.http_post(
+      url := 'https://carequest.info/api/send-signup-email',
+      body := jsonb_build_object(
+        'type', 'INSERT',
+        'table', TG_TABLE_NAME,
+        'schema', TG_TABLE_SCHEMA,
+        'table_id', TG_RELID::bigint,
+        'record', to_jsonb(new)
+      ),
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'x-webhook-secret', webhook_secret
+      ),
+      timeout_milliseconds := 5000
+    );
+  exception when others then
+    raise warning 'notify_signup_email failed: %', sqlerrm;
+  end;
+  return new;
+end;
+$$;
+
+revoke all on function public.notify_signup_email() from public, anon, authenticated;
+
+create or replace trigger signup_email_youth
+  after insert on public.youth_profiles
+  for each row execute function public.notify_signup_email();
+
+create or replace trigger signup_email_senior
+  after insert on public.senior_profiles
+  for each row execute function public.notify_signup_email();
