@@ -588,6 +588,15 @@ footer a:hover{color:#fff;}
   display:flex;align-items:center;justify-content:center; cursor:pointer;
 }
 .icon-btn:hover{border-color:var(--teal);}
+/* Plain red ✕ close button (Log Hours modal): no border or circle,
+   just the glyph, with a full 44px tap target. */
+.modal-close-x{
+  width:44px; height:44px; border:none; background:none; padding:0; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  color:#C62828; font-size:28px; line-height:1; font-family:var(--font-sans); border-radius:8px;
+}
+.modal-close-x:hover{background:#FDECEA;}
+.modal-close-x:focus-visible{outline:3px solid var(--teal); outline-offset:2px;}
 
 .call-overlay{
   position:fixed; inset:0; background:#12181f; z-index:200;
@@ -790,6 +799,8 @@ footer a:hover{color:#fff;}
 .dg-opp-item:last-child{border-bottom:none; padding-bottom:0;}
 .dg-opp-title{display:block; font-size:16px; margin-bottom:4px;}
 .dg-opp-desc{font-size:16px; color:var(--ink-soft); margin:0 0 8px; line-height:1.5;}
+.dg-opp-contact{font-size:16px; color:var(--ink); margin:6px 0 0;}
+.dg-opp-contact a{color:var(--teal-deep); font-weight:500; text-decoration:underline; word-break:break-word;}
 .dg-opp-meta{display:flex; align-items:center; gap:6px; font-size:16px; color:var(--ink-soft); margin-top:4px;}
 .dg-opp-meta svg{width:14px; height:14px; flex-shrink:0;}
 
@@ -1353,7 +1364,7 @@ footer a:hover{color:#fff;}
   <div class="log-hours-modal" role="dialog" aria-modal="true" aria-labelledby="logHoursModalTitle" id="logHoursModal">
     <div class="log-hours-modal-head">
       <h2 id="logHoursModalTitle">Log Hours</h2>
-      <button type="button" class="icon-btn" id="logHoursModalCloseBtn" aria-label="Close"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <button type="button" class="modal-close-x" id="logHoursModalCloseBtn" aria-label="Close"><span aria-hidden="true">✕</span></button>
     </div>
     <form id="logHoursForm" novalidate>
       <input type="hidden" id="logHoursEntryId">
@@ -1368,7 +1379,7 @@ footer a:hover{color:#fff;}
         <p class="field-error hidden" id="logHoursHoursError"></p>
       </div>
       <div class="field">
-        <label for="logHoursDescription">Description <span class="field-hint">e.g. "Community Garden Visit"</span></label>
+        <label for="logHoursDescription">Description <span class="field-hint">e.g. "Cycling Without Age ride"</span></label>
         <input type="text" id="logHoursDescription" maxlength="120">
       </div>
       <p class="field-error hidden" id="logHoursFormError"></p>
@@ -1566,6 +1577,10 @@ footer a:hover{color:#fff;}
     const verified = youthProfile.interview_status === 'verified';
     document.getElementById('tabBtnMatch').classList.toggle('hidden', !verified);
     document.getElementById('tabBtnOpportunities').classList.toggle('hidden', !verified);
+    // Browse Opportunities (Quick Links, Home) points at that tab, so it
+    // follows the same gate rather than linking to a tab that isn't there.
+    const browseLink = document.querySelector('#quickLinksCardMount a[data-tab="opportunities"]');
+    if(browseLink) browseLink.classList.toggle('hidden', !verified);
 
     populateEditProfileForm(youthProfile);
   }
@@ -1920,14 +1935,6 @@ footer a:hover{color:#fff;}
     ));
   }
 
-  function formatOpportunityWhen(startsAt, endsAt){
-    const { DateTime } = luxon;
-    const start = DateTime.fromISO(startsAt);
-    const end = DateTime.fromISO(endsAt);
-    if(!start.isValid || !end.isValid) return '';
-    return start.toFormat('LLLL d, yyyy') + ' • ' + start.toFormat('h:mm a') + ' – ' + end.toFormat('h:mm a');
-  }
-
   // Shared shell every dashboard-overview card is built from: badge icon,
   // title, an optional "View all" link, a body, and an optional footer
   // (e.g. Quick Links' "Explore All Resources" button). Keeping the
@@ -1969,13 +1976,14 @@ footer a:hover{color:#fff;}
           '<div class="dg-opp-item">' +
             '<strong class="dg-opp-title">' + escapeHtml(opp.title) + '</strong>' +
             '<p class="dg-opp-desc">' + escapeHtml(opp.description) + '</p>' +
-            '<div class="dg-opp-meta">' + DASH_ICONS.calendar + '<span>' + escapeHtml(formatOpportunityWhen(opp.startsAt, opp.endsAt)) + '</span></div>' +
-            '<div class="dg-opp-meta">' + DASH_ICONS.pin + '<span>' + escapeHtml(opp.location) + '</span></div>' +
+            (opp.contactEmail
+              ? '<p class="dg-opp-contact">Interested? Email <a href="mailto:' + escapeHtml(opp.contactEmail) + '">' + escapeHtml(opp.contactEmail) + '</a></p>'
+              : '') +
           '</div>'
         ).join('');
     return dgCardShell({
       badgeClass: 'dg-badge-amber', icon: DASH_ICONS.calendar, title: 'Upcoming Opportunities',
-      viewAllHref: viewAllHref || '#', body
+      viewAllHref, body
     });
   }
 
@@ -1997,7 +2005,7 @@ footer a:hover{color:#fff;}
       '</div>';
     return dgCardShell({
       badgeClass: 'dg-badge-rose', icon: DASH_ICONS.heart, title: 'My Impact',
-      viewAllHref: viewAllHref || '#', body
+      viewAllHref, body
     });
   }
 
@@ -2085,8 +2093,6 @@ footer a:hover{color:#fff;}
   function renderMyImpactSection(){
     mountComponent('impactCardMount', ImpactCard, {
       stats: [{ icon: 'person', value: formatHours(computeTotalHours()), label: 'Hours Volunteered' }],
-      note: 'Keep up the great work!',
-      viewAllHref: '#',
       entries: impactHoursEntries
     });
     wireImpactCardEvents();
@@ -2268,6 +2274,7 @@ footer a:hover{color:#fff;}
   function QuickLinksCard({ links } = {}){
     const body = (links || []).map(link =>
       '<a href="' + escapeHtml(link.href) + '" class="dg-link-row"' +
+        (link.tab ? ' data-tab="' + escapeHtml(link.tab) + '"' : '') +
         (link.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' +
         '<div class="dg-link-icon">' + (DASH_ICONS[link.icon] || DASH_ICONS.link) + '</div>' +
         '<div class="dg-link-text">' +
@@ -2288,25 +2295,20 @@ footer a:hover{color:#fff;}
     if(el) el.innerHTML = componentFn(props);
   }
 
-  // Placeholder data — shaped the way real data will eventually arrive.
-  // Opportunities: e.g. an `opportunities` table filtered to ones the
-  // signed-in youth hasn't booked yet, ordered by start time, limit 3.
-  const MOCK_OPPORTUNITIES = [
+  // Ongoing opportunities (not one-off events, so no date or location).
+  // Each has a contact line; staff handle sign-ups by email.
+  const OPPORTUNITIES = [
     {
-      id: 'opp-1',
-      title: 'Community Garden Visit',
-      description: 'Help tend the raised beds and swap stories with residents who love gardening as much as you do.',
-      startsAt: '2025-05-24T16:00:00',
-      endsAt: '2025-05-24T18:00:00',
-      location: 'Sunset Manor Senior Living'
+      id: 'cycling-without-age-north-shore',
+      title: 'Cycling Without Age North Shore',
+      description: 'Volunteer with Cycling Without Age North Shore, which takes seniors out on trishaw bike rides so they can enjoy fresh air, the neighbourhood and good conversation.',
+      contactEmail: 'care1quest@gmail.com'
     },
     {
-      id: 'opp-2',
-      title: 'Board Game Afternoon',
-      description: 'Bring a favorite game and spend an easygoing hour playing with residents in the common room.',
-      startsAt: '2025-05-29T13:00:00',
-      endsAt: '2025-05-29T15:00:00',
-      location: 'Harborview Care Home'
+      id: 'carequest-ambassador',
+      title: 'Become a CareQuest Ambassador',
+      description: 'For students in younger grades: help run CareQuest at your school and carry it forward as current members graduate.',
+      contactEmail: 'care1quest@gmail.com'
     }
   ];
 
@@ -2314,18 +2316,29 @@ footer a:hover{color:#fff;}
   // renderMyImpactSection above) rather than mock data — it's the one
   // card on this tab that's actually interactive.
   //
-  // Browse Opportunities and Help Center are real destinations (a
-  // BetterImpact community search, and help-center.html); there's no
-  // Resource Hub page in this app, so that link was dropped rather than
-  // point somewhere fake.
+  // Browse Opportunities switches to the Opportunities & Impact tab
+  // (`tab`, handled in wireQuickLinks; hidden until that tab is unlocked
+  // by interview verification — see activateYouthTabs). Help Center
+  // emails the CareQuest team.
   const QUICK_LINKS = [
-    {
-      icon: 'search', title: 'Browse Opportunities', description: 'Find volunteer opportunities',
-      href: 'https://app.betterimpact.com/PublicEnterprise/EnterpriseSearch?EnterpriseGuid=c2ee653d-cda4-44e8-892e-25e1f885f432&SearchType=CommunityClassification&SearchId=711',
-      external: true
-    },
-    { icon: 'help', title: 'Help Center', description: 'Get support and FAQs', href: 'help-center' }
+    { icon: 'search', title: 'Browse Opportunities', description: 'Find volunteer opportunities', href: '#opportunities', tab: 'opportunities' },
+    { icon: 'help', title: 'Help Center', description: 'Email the CareQuest team', href: 'mailto:care1quest@gmail.com' }
   ];
+
+  // Quick Links rows with a `tab` switch tabs in place instead of
+  // following their href. Delegated on the mount, attached once.
+  function wireQuickLinks(){
+    const mount = document.getElementById('quickLinksCardMount');
+    if(!mount || mount.dataset.wired) return;
+    mount.dataset.wired = 'true';
+    mount.addEventListener('click', (e) => {
+      const link = e.target.closest('a[data-tab]');
+      if(!link) return;
+      e.preventDefault();
+      switchTab(link.dataset.tab);
+      document.getElementById(tabPanelId(link.dataset.tab)).focus();
+    });
+  }
 
   // Youth-only: mounts the three components with today's data. Visibility
   // of the panel they live in (#panelOpportunities) is handled by the
@@ -2333,13 +2346,14 @@ footer a:hover{color:#fff;}
   // loadMember() once the signed-in user's role is known to be 'youth'
   // — never for seniors.
   function renderYouthDashboardSection(){
-    mountComponent('opportunitiesCardMount', OpportunitiesCard, { opportunities: MOCK_OPPORTUNITIES, viewAllHref: '#' });
+    mountComponent('opportunitiesCardMount', OpportunitiesCard, { opportunities: OPPORTUNITIES });
     // Render immediately with whatever's in impactHoursEntries so far
     // (empty on first load — shows the empty state briefly), then
     // loadImpactHours() re-renders once the real rows arrive.
     renderMyImpactSection();
     loadImpactHours();
     mountComponent('quickLinksCardMount', QuickLinksCard, { links: QUICK_LINKS });
+    wireQuickLinks();
   }
 
   function blockKey(day, start, end){ return day + '|' + start + '|' + end; }
