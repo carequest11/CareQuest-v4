@@ -49,7 +49,9 @@ Either way, **`supabase-schema.sql` stays the source of truth** — anything you
 
 ### No shared template — pages are self-contained copies
 
-Every `*.html` file at the repo root embeds its **own full copy** of the same `<style>` block (CSS variables, header, buttons, dashboard cards, etc.) and the same header markup (logo + `#authSlot`). This is deliberate copy-paste, not a shared include — changing a global visual style means editing the `<style>` block in every relevant page individually. The one thing that actually is shared is `css/auth-header.css` (linked, not embedded).
+Every `*.html` file at the repo root embeds its **own full copy** of the same `<style>` block (CSS variables, header, buttons, dashboard cards, etc.) and the same header markup (logo + `#authSlot`). This is deliberate copy-paste, not a shared include — changing a global visual style means editing the `<style>` block in every relevant page individually. The things that actually are shared are `css/auth-header.css` and `css/fonts.css` (linked, not embedded).
+
+**Typography lives in `css/fonts.css`:** it loads Figtree and defines `--font-sans`, and every page links it *before* its own `<style>` block. Page styles never name a font — they use `font-family:var(--font-sans)` — so changing the site font is an edit to that one file. Only weights 400 and 500 are used, and no text is smaller than 16px. The single exception is the homepage hero in `index.html`: the headline (Fraunces) and its eyebrow (Inter 700, 13px), plus the polaroid captions (Fraunces italic), keep their original look via an extra Google Fonts `<link>` on that page only. Don't add serif fonts anywhere else.
 
 Pages that talk to Supabase load three scripts in this order: the Supabase CDN build (pinned to `@^2.49.4` — see below for why), then `js/supabaseClient.js`, then `js/authHeader.js` if that page shows the header sign-in widget, then the page's own inline `<script>` at the bottom of `<body>`.
 

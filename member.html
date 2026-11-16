@@ -13,7 +13,7 @@
 <script src="https://unpkg.com/@daily-co/daily-js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/auth-header.css">
 <style>
 :root{
@@ -35,23 +35,23 @@ body{
   margin:0;
   background:var(--paper);
   color:var(--ink);
-  font-family:'Inter',sans-serif;
+  font-family:var(--font-sans);
   font-size:18px;
   line-height:1.65;
   -webkit-font-smoothing:antialiased;
 }
 a{color:inherit;}
 h1,h2,h3{
-  font-family:'Fraunces',serif;
-  font-weight:600;
+  font-family:var(--font-sans);
+  font-weight:500;
   line-height:1.15;
   margin:0;
   color:var(--ink);
 }
 .wrap{max-width:var(--max);margin:0 auto;padding:0 28px;}
 button, .btn{
-  font-family:'Inter',sans-serif;
-  font-weight:600;
+  font-family:var(--font-sans);
+  font-weight:500;
   font-size:17px;
   cursor:pointer;
   border:none;
@@ -88,14 +88,14 @@ header.site{
 }
 .logo{
   display:flex; align-items:center; gap:10px;
-  font-family:'Fraunces',serif; font-weight:600; font-size:22px;
+  font-family:var(--font-sans); font-weight:500; font-size:22px;
   text-decoration:none;
 }
 .logo-mark{
   width:38px;height:38px;object-fit:contain;flex-shrink:0;
   filter:drop-shadow(0 2px 2px rgba(0,0,0,.08));
 }
-.navlinks{display:flex;align-items:center;gap:28px;font-weight:600;font-size:16px;}
+.navlinks{display:flex;align-items:center;gap:28px;font-weight:500;font-size:16px;}
 .navlinks a{text-decoration:none;color:var(--ink-soft);}
 .navlinks a:hover{color:var(--teal);}
 .navlinks a.nav-login{
@@ -105,13 +105,13 @@ header.site{
 .navlinks a.nav-login:hover{background:var(--teal); color:#fff;}
 .back-link{
   display:inline-flex; align-items:center; gap:6px;
-  font-weight:600; color:var(--ink-soft); text-decoration:none; font-size:15px;
+  font-weight:500; color:var(--ink-soft); text-decoration:none; font-size:16px;
 }
 .back-link:hover{color:var(--teal);}
 .header-actions{display:flex;align-items:center;gap:18px;}
 .login-link{
   display:inline-flex; align-items:center; gap:6px;
-  font-weight:700; color:var(--teal); text-decoration:none; font-size:15px;
+  font-weight:500; color:var(--teal); text-decoration:none; font-size:16px;
   border:1.5px solid var(--teal); border-radius:999px; padding:8px 18px;
 }
 .login-link:hover{background:var(--teal); color:#fff;}
@@ -146,16 +146,16 @@ html.home-lock, body.home-lock{
 }
 .eyebrow{
   display:inline-flex; align-items:center; gap:8px;
-  font-weight:700; letter-spacing:.06em; text-transform:uppercase;
-  font-size:13px; color:var(--rust); margin-bottom:clamp(10px,2vh,18px);
+  font-weight:500; letter-spacing:.06em; text-transform:uppercase;
+  font-size:16px; color:var(--rust); margin-bottom:clamp(10px,2vh,18px);
 }
 .home-hero h1{
   font-size:clamp(28px,4.2vw,52px);
-  font-weight:600;
+  font-weight:500;
 }
 .home-hero h1 em{font-style:italic; color:var(--teal);}
 .home-hero p.lead{
-  font-size:clamp(15px,1.6vw,19px);
+  font-size:clamp(16px,1.6vw,19px);
   color:var(--ink-soft);
   max-width:52ch;
   margin:clamp(12px,2vh,22px) auto clamp(20px,3vh,32px);
@@ -183,7 +183,7 @@ html.home-lock, body.home-lock{
   filter:sepia(.08) saturate(1.05) contrast(1.02);
 }
 .polaroid .cap{
-  font-family:'Fraunces',serif; font-style:italic; font-size:13.5px;
+  font-family:var(--font-sans); font-style:italic; font-size:16px;
   text-align:center; margin-top:10px; color:var(--ink-soft);
 }
 .tape{
@@ -260,13 +260,13 @@ html.home-lock, body.home-lock{
 }
 .step-pill{
   display:flex; align-items:center; gap:8px;
-  font-size:14px; font-weight:600; color:var(--ink-soft);
+  font-size:16px; font-weight:500; color:var(--ink-soft);
   padding:8px 16px; border-radius:999px; border:1.5px solid var(--line);
   background:#fff;
 }
 .step-pill .num{
-  width:20px;height:20px;border-radius:50%;
-  background:var(--line); color:#fff; font-size:12px;
+  width:24px;height:24px;border-radius:50%;
+  background:var(--line); color:#fff; font-size:16px;
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
 .step-pill.done{border-color:var(--teal); color:var(--teal);}
@@ -295,20 +295,20 @@ html.home-lock, body.home-lock{
   background:#fff; border:1px solid var(--line); border-radius:20px; padding:40px;
 }
 .acct-card h2{
-  font-family:'Inter'; font-weight:700; font-size:15px; letter-spacing:.04em;
+  font-family:var(--font-sans); font-weight:500; font-size:16px; letter-spacing:.04em;
   text-transform:uppercase; color:var(--ink-soft); margin-bottom:22px;
 }
 
 .field{margin-bottom:24px;}
-.field label{display:block; font-size:18px; font-weight:600; margin-bottom:8px; color:var(--ink);}
+.field label{display:block; font-size:18px; font-weight:500; margin-bottom:8px; color:var(--ink);}
 .field input, .field select, .field textarea{
   width:100%; padding:15px 17px; border-radius:12px; border:2px solid var(--line);
-  background:#fff; color:var(--ink); font-family:'Inter'; font-size:17px;
+  background:#fff; color:var(--ink); font-family:var(--font-sans); font-size:17px;
 }
 .field input::placeholder, .field textarea::placeholder{color:#9AA0A8;}
 .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--teal);}
 .field textarea{resize:vertical; min-height:100px; line-height:1.5;}
-.field-hint{display:block; font-weight:400; opacity:.65; font-size:15px;}
+.field-hint{display:block; font-weight:400; opacity:.65; font-size:16px;}
 .field-row{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
 @media (max-width:600px){ .field-row{grid-template-columns:1fr;} }
 
@@ -324,7 +324,7 @@ html.home-lock, body.home-lock{
      coherent teal-family control rather than a tan outline around a
      mint fill. */
   padding:10px 16px; min-height:44px; border-radius:10px; border:2px solid #A9CFC0;
-  background:#E1F0EA; color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;
+  background:#E1F0EA; color:var(--ink); font-size:16px; font-weight:500; cursor:pointer;
 }
 .day-tab.active{background:var(--teal); border-color:var(--teal); color:#fff;}
 /* Exactly 7 days, always — an even 7-column grid instead of the base
@@ -345,7 +345,7 @@ html.home-lock, body.home-lock{
 .slot-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;}
 .slot{
   padding:14px 10px; min-height:44px; border-radius:10px; border:2px solid var(--line);
-  background:var(--paper-deep); color:var(--ink); font-size:15px; font-weight:600; text-align:center; cursor:pointer;
+  background:var(--paper-deep); color:var(--ink); font-size:16px; font-weight:500; text-align:center; cursor:pointer;
 }
 .slot.selected{background:var(--rust); border-color:var(--rust); color:#fff;}
 .slot.disabled{opacity:.35; cursor:not-allowed;}
@@ -353,11 +353,11 @@ html.home-lock, body.home-lock{
 .acct-submit-row{
   margin-top:28px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
 }
-.acct-submit-row p{font-size:14px; color:var(--ink-soft); margin:0;}
+.acct-submit-row p{font-size:16px; color:var(--ink-soft); margin:0;}
 .acct-switch{
-  text-align:center; margin-top:20px; font-size:15px; color:var(--ink-soft);
+  text-align:center; margin-top:20px; font-size:16px; color:var(--ink-soft);
 }
-.acct-switch a{color:var(--teal); font-weight:700; text-decoration:none;}
+.acct-switch a{color:var(--teal); font-weight:500; text-decoration:none;}
 .acct-switch a:hover{text-decoration:underline;}
 .acct-submit{width:100%; margin-top:8px;}
 
@@ -375,13 +375,13 @@ html.home-lock, body.home-lock{
 .login-role-row .btn{flex:1;}
 .login-divider{
   display:flex; align-items:center; gap:14px; margin:26px 0;
-  color:var(--ink-soft); font-size:14px; font-weight:600;
+  color:var(--ink-soft); font-size:16px; font-weight:500;
 }
 .login-divider::before, .login-divider::after{content:"";flex:1;height:1px;background:var(--line);}
 .login-help{
   text-align:center; margin-top:24px; font-size:16px; color:var(--ink-soft);
 }
-.login-help a{color:var(--teal); font-weight:700; text-decoration:none;}
+.login-help a{color:var(--teal); font-weight:500; text-decoration:none;}
 .login-help a:hover{text-decoration:underline;}
 
 /* ===================================================
@@ -417,8 +417,8 @@ section.about-section{padding:80px 0;}
   box-shadow:0 8px 18px rgba(35,43,54,.08);
 }
 .step-num{
-  font-family:'Fraunces',serif; font-style:italic; color:var(--rust);
-  font-size:14px; display:block; margin-bottom:8px;
+  font-family:var(--font-sans); font-style:italic; color:var(--rust);
+  font-size:16px; display:block; margin-bottom:8px;
 }
 .step h3{font-size:19px; margin-bottom:8px;}
 .step p{color:var(--ink-soft); font-size:16px; margin:0;}
@@ -433,15 +433,15 @@ section.about-section{padding:80px 0;}
 }
 .testimonial-wrap::before{
   content:"“"; position:absolute; top:-10px; left:24px;
-  font-family:'Fraunces',serif; font-size:180px; color:rgba(255,255,255,.12);
+  font-family:var(--font-sans); font-size:180px; color:rgba(255,255,255,.12);
   line-height:1;
 }
 .testimonial-wrap blockquote{
-  font-family:'Fraunces',serif; font-style:italic; font-weight:500;
+  font-family:var(--font-sans); font-style:italic; font-weight:500;
   font-size:clamp(22px,2.6vw,30px); margin:0 0 24px; max-width:60ch; position:relative;
 }
-.testimonial-wrap figcaption{font-family:'Inter'; font-weight:600; opacity:.9;}
-.testimonial-note{font-size:14px; opacity:.7; margin-top:6px;}
+.testimonial-wrap figcaption{font-family:var(--font-sans); font-weight:500; opacity:.9;}
+.testimonial-note{font-size:16px; opacity:.7; margin-top:6px;}
 
 .team-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:28px;}
 .team-card{text-align:center;}
@@ -451,7 +451,7 @@ section.about-section{padding:80px 0;}
   display:flex;align-items:center;justify-content:center;
 }
 .team-card h3{font-size:18px; margin-bottom:4px;}
-.team-card p{color:var(--ink-soft); font-size:15px; margin:0;}
+.team-card p{color:var(--ink-soft); font-size:16px; margin:0;}
 @media (max-width:780px){ .team-grid{grid-template-columns:1fr;} }
 
 .about-cta{
@@ -467,14 +467,14 @@ footer.site{
   display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:40px;
   padding-bottom:36px; border-bottom:1px solid rgba(255,255,255,.12);
 }
-.footer-logo{display:flex;align-items:center;gap:10px; font-family:'Fraunces',serif; font-size:20px; margin-bottom:14px;}
+.footer-logo{display:flex;align-items:center;gap:10px; font-family:var(--font-sans); font-size:20px; margin-bottom:14px;}
 .footer-logo .logo-mark{width:32px;height:32px; filter:brightness(0) invert(1) opacity(.9);}
-footer h4{font-family:'Inter'; font-size:15px; letter-spacing:.04em; text-transform:uppercase; color:#C9BFA3; margin:0 0 16px;}
-footer p, footer a{color:#D8D0BC; font-size:15px; text-decoration:none; line-height:1.9;}
+footer h4{font-family:var(--font-sans); font-size:16px; letter-spacing:.04em; text-transform:uppercase; color:#C9BFA3; margin:0 0 16px;}
+footer p, footer a{color:#D8D0BC; font-size:16px; text-decoration:none; line-height:1.9;}
 footer a:hover{color:#fff;}
 .footer-bottom{
   display:flex; justify-content:space-between; align-items:center;
-  padding-top:22px; font-size:13px; color:#9A917B; flex-wrap:wrap; gap:12px;
+  padding-top:22px; font-size:16px; color:#9A917B; flex-wrap:wrap; gap:12px;
 }
 @media (max-width:780px){ .footer-top{grid-template-columns:1fr;} }
 
@@ -493,13 +493,13 @@ footer a:hover{color:#fff;}
    by this id; hiding it here has the same effect with no risk of a
    null-reference error if that line ever runs before this rule loads. */
 .dash-greeting h1{display:none;}
-.dash-greeting p{color:var(--ink-soft); margin-top:0; max-width:64ch; font-size:15px;}
+.dash-greeting p{color:var(--ink-soft); margin-top:0; max-width:64ch; font-size:16px;}
 .lock-icon{
   width:34px;height:34px;border-radius:50%;background:#fff;border:1.5px solid var(--line);
   display:flex;align-items:center;justify-content:center; flex-shrink:0;
 }
 .status-badge{
-  display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700;
+  display:inline-flex; align-items:center; gap:6px; font-size:16px; font-weight:500;
   padding:5px 12px; border-radius:999px; margin-bottom:14px;
 }
 .status-badge svg{width:14px; height:14px; flex-shrink:0;}
@@ -510,7 +510,7 @@ footer a:hover{color:#fff;}
 .status-badge.verified{background:#E1F0EA; color:var(--teal-deep);}
 .status-badge.matched{background:#FBE4DC; color:#8F3A24;}
 .demo-toggle{
-  margin-top:16px; font-size:13px; color:var(--ink-soft);
+  margin-top:16px; font-size:16px; color:var(--ink-soft);
   background:none; border:1px dashed var(--line); border-radius:8px;
   padding:8px 12px; cursor:pointer;
 }
@@ -518,10 +518,10 @@ footer a:hover{color:#fff;}
 .hidden{display:none !important;}
 
 .avail-grid{
-  display:grid; grid-template-columns:90px repeat(7,1fr); gap:4px; margin-top:16px; font-size:13px;
+  display:grid; grid-template-columns:90px repeat(7,1fr); gap:4px; margin-top:16px; font-size:16px;
 }
-.avail-grid .head{font-weight:700; text-align:center; padding:6px 2px; color:var(--ink-soft);}
-.avail-grid .rowlabel{font-weight:600; display:flex; align-items:center; color:var(--ink-soft);}
+.avail-grid .head{font-weight:500; text-align:center; padding:6px 2px; color:var(--ink-soft);}
+.avail-grid .rowlabel{font-weight:500; display:flex; align-items:center; color:var(--ink-soft);}
 .avail-cell{
   aspect-ratio:1.3; border-radius:6px; background:var(--paper-deep);
   border:1.5px solid var(--line); cursor:pointer;
@@ -539,23 +539,23 @@ footer a:hover{color:#fff;}
 }
 .match-tags{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
 .match-tags span{
-  font-size:12px; font-weight:600; background:var(--paper-deep); padding:4px 10px; border-radius:999px; color:var(--ink-soft);
+  font-size:16px; font-weight:500; background:var(--paper-deep); padding:4px 10px; border-radius:999px; color:var(--ink-soft);
 }
 
 /* ===================================================
    CALENDAR-STYLE BOOKING (senior view of youth availability)
 =================================================== */
 .cal-grid{
-  display:grid; grid-template-columns:70px repeat(7,1fr); gap:4px; margin-top:16px; font-size:13px;
+  display:grid; grid-template-columns:70px repeat(7,1fr); gap:4px; margin-top:16px; font-size:16px;
 }
-.cal-grid .head{font-weight:700; text-align:center; padding:6px 2px; color:var(--ink-soft);}
-.cal-grid .rowlabel{font-weight:600; display:flex; align-items:center; color:var(--ink-soft); font-size:12px;}
+.cal-grid .head{font-weight:500; text-align:center; padding:6px 2px; color:var(--ink-soft);}
+.cal-grid .rowlabel{font-weight:500; display:flex; align-items:center; color:var(--ink-soft); font-size:16px;}
 .cal-cell{
   aspect-ratio:1.3; border-radius:6px;
   display:flex; align-items:center; justify-content:center;
-  font-size:11px; cursor:default;
+  font-size:16px; cursor:default;
 }
-.cal-cell.open{background:#E1F0EA; border:1.5px solid var(--teal); color:var(--teal-deep); cursor:pointer; font-weight:600;}
+.cal-cell.open{background:#E1F0EA; border:1.5px solid var(--teal); color:var(--teal-deep); cursor:pointer; font-weight:500;}
 .cal-cell.open:hover{background:var(--teal); color:#fff;}
 .cal-cell.open.selected{background:var(--rust); border-color:var(--rust); color:#fff;}
 .cal-cell.taken{background:var(--paper-deep); color:#B7AD91;}
@@ -573,7 +573,7 @@ footer a:hover{color:#fff;}
   border:1px solid var(--line); border-top:none; background:#fff; min-height:360px;
   padding:24px; display:flex; flex-direction:column; gap:14px;
 }
-.msg{max-width:70%; padding:12px 16px; border-radius:16px; font-size:15px; line-height:1.5;}
+.msg{max-width:70%; padding:12px 16px; border-radius:16px; font-size:16px; line-height:1.5;}
 .msg.them{background:var(--paper-deep); align-self:flex-start; border-bottom-left-radius:4px;}
 .msg.me{background:var(--teal); color:#fff; align-self:flex-end; border-bottom-right-radius:4px;}
 .chat-input-row{
@@ -581,7 +581,7 @@ footer a:hover{color:#fff;}
   border-radius:0 0 16px 16px; padding:14px; background:#fff;
 }
 .chat-input-row input{
-  flex:1; border:1.5px solid var(--line); border-radius:999px; padding:12px 18px; font-family:'Inter'; font-size:15px;
+  flex:1; border:1.5px solid var(--line); border-radius:999px; padding:12px 18px; font-family:var(--font-sans); font-size:16px;
 }
 .icon-btn{
   width:44px;height:44px;border-radius:50%; border:1.5px solid var(--line); background:#fff;
@@ -603,7 +603,7 @@ footer a:hover{color:#fff;}
   background:#2A3542; border-radius:12px; border:1px solid rgba(255,255,255,.15);
   display:flex; align-items:center; justify-content:center;
 }
-.call-name{position:absolute; top:18px; left:18px; font-size:14px; font-weight:600; opacity:.85;}
+.call-name{position:absolute; top:18px; left:18px; font-size:16px; font-weight:500; opacity:.85;}
 .call-controls{display:flex; gap:16px; margin-top:26px;}
 .call-btn{
   width:56px;height:56px;border-radius:50%; border:none; cursor:pointer;
@@ -623,7 +623,7 @@ footer a:hover{color:#fff;}
   display:flex; align-items:center; gap:14px;
   margin-bottom:14px; padding:16px 20px;
   background:#B3301A; color:#fff; border-radius:14px;
-  font-size:19px; font-weight:700; line-height:1.35;
+  font-size:19px; font-weight:500; line-height:1.35;
 }
 .call-recording-dot{
   width:18px; height:18px; border-radius:50%; background:#fff; flex:none;
@@ -643,7 +643,7 @@ footer a:hover{color:#fff;}
 .consent-block p{font-size:17px; line-height:1.55; margin:0 0 14px;}
 .consent-check{display:flex; gap:12px; align-items:flex-start; margin-bottom:16px; cursor:pointer;}
 .consent-check input{width:26px; height:26px; flex:none; margin-top:2px; accent-color:var(--teal);}
-.consent-check span{font-size:17px; line-height:1.5; font-weight:600;}
+.consent-check span{font-size:17px; line-height:1.5; font-weight:500;}
 
 /* ===================================================
    AVAILABILITY GRID + VISIT SCHEDULING (member page)
@@ -677,7 +677,7 @@ footer a:hover{color:#fff;}
 .slot-options{display:flex; flex-wrap:wrap; gap:10px;}
 .slot-btn{
   min-height:52px; padding:12px 22px; border-radius:12px; border:2px solid var(--line);
-  background:#fff; font-size:16px; font-weight:600; color:var(--ink); cursor:pointer;
+  background:#fff; font-size:16px; font-weight:500; color:var(--ink); cursor:pointer;
 }
 .slot-btn:hover{border-color:var(--teal);}
 .slot-btn.selected{background:var(--rust); border-color:var(--rust); color:#fff;}
@@ -699,10 +699,10 @@ footer a:hover{color:#fff;}
   min-height:220px; max-height:480px; overflow-y:auto;
   padding:18px; display:flex; flex-direction:column; gap:12px; margin-top:16px;
 }
-.inline-msg{max-width:80%; padding:12px 16px; border-radius:16px; font-size:15px; line-height:1.5;}
+.inline-msg{max-width:80%; padding:12px 16px; border-radius:16px; font-size:16px; line-height:1.5;}
 .inline-msg.them{background:var(--paper-deep); align-self:flex-start; border-bottom-left-radius:4px; color:var(--ink);}
 .inline-msg.me{background:var(--teal); color:#fff; align-self:flex-end; border-bottom-right-radius:4px;}
-.inline-msg-meta{font-size:12px; font-weight:700; opacity:.65; margin-bottom:4px;}
+.inline-msg-meta{font-size:16px; font-weight:500; opacity:.65; margin-bottom:4px;}
 /* Explicit align-items:center (was relying on flex's default
    "stretch") so the input and Send button visibly share one clean
    center line rather than each just being stretched to match
@@ -712,7 +712,7 @@ footer a:hover{color:#fff;}
 .inline-chat-input-row{display:flex; align-items:center; gap:12px; margin-top:14px;}
 .inline-chat-input-row input{
   flex:1; border:1.5px solid var(--line); border-radius:999px; padding:13px 18px;
-  font-family:'Inter'; font-size:15px; color:var(--ink); min-height:48px;
+  font-family:var(--font-sans); font-size:16px; color:var(--ink); min-height:48px;
 }
 .inline-chat-input-row input:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
 /* This page's other buttons (Save Availability, Schedule a Visit,
@@ -780,21 +780,21 @@ footer a:hover{color:#fff;}
 .dg-badge-peach{background:#FBE3D1; color:#8F3A24;}
 .dg-badge-sky{background:#DCEBFA; color:#1F4E7A;}
 .dg-card-title{font-size:18px; flex:1; margin:0;}
-.dg-card-sub{color:var(--ink-soft); font-size:15px; margin:0 0 16px;}
+.dg-card-sub{color:var(--ink-soft); font-size:16px; margin:0 0 16px;}
 .dg-card-copy{color:var(--ink-soft); font-size:16px; line-height:1.5; margin:0;}
-.dg-view-all{font-size:14px; font-weight:700; color:var(--teal); text-decoration:none; white-space:nowrap;}
+.dg-view-all{font-size:16px; font-weight:500; color:var(--teal); text-decoration:none; white-space:nowrap;}
 .dg-view-all:hover{text-decoration:underline;}
 .dg-card-body{flex:1; display:flex; flex-direction:column; gap:16px;}
 
 .dg-opp-item{padding-bottom:16px; border-bottom:1px solid var(--line);}
 .dg-opp-item:last-child{border-bottom:none; padding-bottom:0;}
 .dg-opp-title{display:block; font-size:16px; margin-bottom:4px;}
-.dg-opp-desc{font-size:14px; color:var(--ink-soft); margin:0 0 8px; line-height:1.5;}
-.dg-opp-meta{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-soft); margin-top:4px;}
+.dg-opp-desc{font-size:16px; color:var(--ink-soft); margin:0 0 8px; line-height:1.5;}
+.dg-opp-meta{display:flex; align-items:center; gap:6px; font-size:16px; color:var(--ink-soft); margin-top:4px;}
 .dg-opp-meta svg{width:14px; height:14px; flex-shrink:0;}
 
 .dg-empty-state{text-align:center; padding:16px 4px 4px; color:var(--ink-soft);}
-.dg-empty-state p{margin:0 0 16px; font-size:15px; line-height:1.5;}
+.dg-empty-state p{margin:0 0 16px; font-size:16px; line-height:1.5;}
 
 .dg-stat-row{display:flex; align-items:center; gap:16px;}
 .dg-stat-icon{
@@ -802,10 +802,10 @@ footer a:hover{color:#fff;}
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
 .dg-stat-icon svg{width:26px; height:26px;}
-.dg-stat-value{font-family:'Inter',sans-serif; font-size:34px; font-weight:700; line-height:1;}
-.dg-stat-label{font-size:14px; color:var(--ink-soft); margin-top:4px; font-weight:600;}
+.dg-stat-value{font-family:var(--font-sans); font-size:34px; font-weight:500; line-height:1;}
+.dg-stat-label{font-size:16px; color:var(--ink-soft); margin-top:4px; font-weight:500;}
 .dg-impact-note{
-  font-size:14px; color:var(--teal-deep); font-weight:700; margin:0;
+  font-size:16px; color:var(--teal-deep); font-weight:500; margin:0;
   padding-top:16px; border-top:1px solid var(--line);
 }
 
@@ -821,8 +821,8 @@ footer a:hover{color:#fff;}
 }
 .dg-link-icon svg{width:18px; height:18px;}
 .dg-link-text{flex:1; min-width:0;}
-.dg-link-text strong{display:block; font-size:15px;}
-.dg-link-text span{display:block; font-size:13px; color:var(--ink-soft); margin-top:2px;}
+.dg-link-text strong{display:block; font-size:16px;}
+.dg-link-text span{display:block; font-size:16px; color:var(--ink-soft); margin-top:2px;}
 .dg-chev{width:18px; height:18px; flex-shrink:0; color:var(--ink-soft);}
 .dg-explore-btn{width:100%; margin-top:18px; justify-content:center;}
 
@@ -837,7 +837,7 @@ footer a:hover{color:#fff;}
 }
 .member-tab-btn{
   appearance:none; background:none; border:none; cursor:pointer;
-  font-family:'Inter',sans-serif; font-weight:700; font-size:16px; color:var(--ink-soft);
+  font-family:var(--font-sans); font-weight:500; font-size:16px; color:var(--ink-soft);
   padding:9px 14px; border-radius:10px 10px 0 0; margin-bottom:-1px; min-height:40px;
   border-bottom:3px solid transparent;
   transition:color .15s ease, border-color .15s ease;
@@ -919,7 +919,7 @@ footer a:hover{color:#fff;}
    themselves — auto-fill already adapts the slot grid to however much
    width is actually available, so the same rules that work in the
    roomy senior view also work here without separate tuning. */
-#panelMatch .avail-summary{margin-top:6px; font-size:13px;}
+#panelMatch .avail-summary{margin-top:6px; font-size:16px;}
 @media (min-width:1024px){
   #panelMatch{max-height:calc(100vh - 170px); overflow-y:auto;}
   /* Only crank the chat box down this small where #panelMatch itself
@@ -974,7 +974,7 @@ footer a:hover{color:#fff;}
    cropping the top message's meta label at the box's edge. Removed —
    inherits the base .inline-chat-box's 220px/360px min/max instead. */
 #seniorMemberView .avail-picker{margin-top:6px;}
-#seniorMemberView .avail-summary{margin-top:6px; font-size:13px;}
+#seniorMemberView .avail-summary{margin-top:6px; font-size:16px;}
 
 /* ===================================================
    LOG HOURS (My Impact card — Opportunities & Impact tab)
@@ -984,7 +984,7 @@ footer a:hover{color:#fff;}
   display:flex; flex-direction:column; gap:10px;
   max-height:220px; overflow-y:auto;
 }
-.impact-hours-empty{color:var(--ink-soft); font-size:14px; line-height:1.5; margin:0;}
+.impact-hours-empty{color:var(--ink-soft); font-size:16px; line-height:1.5; margin:0;}
 /* Entry stacks info above its actions (rather than a side-by-side row)
    so labeled Edit/Delete buttons always have room to read clearly,
    even in this card's narrower 3-up grid column. */
@@ -993,8 +993,8 @@ footer a:hover{color:#fff;}
   padding:10px 0; border-bottom:1px solid var(--line);
 }
 .impact-hours-entry:last-child{border-bottom:none; padding-bottom:0;}
-.impact-hours-entry-info{font-size:14px; line-height:1.5; color:var(--ink);}
-.impact-hours-entry-date{color:var(--ink-soft); font-size:13px; margin-top:2px;}
+.impact-hours-entry-info{font-size:16px; line-height:1.5; color:var(--ink);}
+.impact-hours-entry-date{color:var(--ink-soft); font-size:16px; margin-top:2px;}
 .impact-hours-entry-actions{display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;}
 /* Icon + visible label (not icon-only) so the action reads at a
    glance, not just on hover/for screen readers — teal for the
@@ -1002,7 +1002,7 @@ footer a:hover{color:#fff;}
    two colors are already used elsewhere on the site. */
 .impact-action-btn{
   display:inline-flex; align-items:center; gap:6px;
-  font-family:'Inter',sans-serif; font-weight:700; font-size:13px;
+  font-family:var(--font-sans); font-weight:500; font-size:16px;
   padding:8px 14px; min-height:44px; border-radius:999px; border:1.5px solid var(--line);
   background:#fff; cursor:pointer;
   transition:background .15s ease, border-color .15s ease, color .15s ease;
@@ -1032,7 +1032,7 @@ footer a:hover{color:#fff;}
 /* Errors pair an icon with text rather than relying on the red border
    alone, per the "not color-only" requirement. */
 .field-error{
-  display:flex; align-items:center; gap:6px; color:#8F3A24; font-size:14px; font-weight:600;
+  display:flex; align-items:center; gap:6px; color:#8F3A24; font-size:16px; font-weight:500;
   margin-top:6px;
 }
 .field-error svg{width:16px; height:16px; flex-shrink:0;}
@@ -1111,7 +1111,7 @@ footer a:hover{color:#fff;}
         <div>
           <button type="button" class="btn btn-outline" id="choosePhotoBtn">Choose Photo</button>
           <input type="file" id="avatarFileInput" accept="image/png, image/jpeg, image/webp" style="display:none;">
-          <p id="avatarUploadStatus" style="margin-top:8px; font-size:14px; color:var(--ink-soft);"></p>
+          <p id="avatarUploadStatus" style="margin-top:8px; font-size:16px; color:var(--ink-soft);"></p>
         </div>
       </div>
     </div>
@@ -1151,7 +1151,7 @@ footer a:hover{color:#fff;}
           <input type="text" id="editLanguages" placeholder="e.g. English, Mandarin">
         </div>
         <button type="submit" class="btn btn-primary" id="saveProfileBtn">Save Changes</button>
-        <p id="saveProfileStatus" style="margin-top:10px; font-size:15px; font-weight:700; display:none;"></p>
+        <p id="saveProfileStatus" style="margin-top:10px; font-size:16px; font-weight:500; display:none;"></p>
       </form>
     </div>
   </div>
@@ -1243,7 +1243,7 @@ footer a:hover{color:#fff;}
         </div>
         <p class="avail-summary" id="availSummary">Loading your availability…</p>
         <button type="button" class="btn btn-primary" id="saveAvailBtn" style="margin-top:8px;">Save Availability</button>
-        <p id="availSaveStatus" style="margin-top:10px; font-size:15px; color:var(--teal-deep); font-weight:700; display:none;">Saved ✓</p>
+        <p id="availSaveStatus" style="margin-top:10px; font-size:16px; color:var(--teal-deep); font-weight:500; display:none;">Saved ✓</p>
       </div>
     </div>
 
@@ -1255,7 +1255,7 @@ footer a:hover{color:#fff;}
             <h3 class="dg-card-title">Upcoming Visit</h3>
           </div>
           <span class="status-badge verified"><span id="visitStatusIcon"></span> Visit Scheduled</span>
-          <p id="upcomingVisitText" style="font-size:18px; font-weight:600;">—</p>
+          <p id="upcomingVisitText" style="font-size:18px; font-weight:500;">—</p>
           <button type="button" class="btn btn-outline" id="cancelVisitBtn" style="margin-top:10px;">Cancel Visit</button>
         </div>
 
@@ -1286,12 +1286,12 @@ footer a:hover{color:#fff;}
           <input type="text" id="inlineChatInput" placeholder="Type a message…">
           <button type="button" class="btn btn-primary" id="inlineChatSendBtn">Send</button>
         </div>
-        <p style="margin-top:14px;"><a href="messages" style="color:var(--teal); font-weight:700; text-decoration:none; font-size:15px;">See full message history →</a></p>
+        <p style="margin-top:14px;"><a href="messages" style="color:var(--teal); font-weight:500; text-decoration:none; font-size:16px;">See full message history →</a></p>
         <label class="consent-check" for="messageEmailCheck" style="margin:20px 0 0;">
           <input type="checkbox" id="messageEmailCheck">
           <span style="font-size:17px;">Email me when my match sends a message. The email won't include what they wrote.</span>
         </label>
-        <p id="messageEmailStatus" style="margin-top:8px; font-size:15px; font-weight:700; display:none;"></p>
+        <p id="messageEmailStatus" style="margin-top:8px; font-size:16px; font-weight:500; display:none;"></p>
       </div>
 
       <!-- #callCard is inserted here (JS) for youth, appended into
@@ -1334,7 +1334,7 @@ footer a:hover{color:#fff;}
   <div class="call-controls">
     <button class="call-btn end" title="End call" id="endCallBtn">✕</button>
   </div>
-  <p style="margin-top:18px; font-size:13px; opacity:.55;" id="callStatus">Connecting…</p>
+  <p style="margin-top:18px; font-size:16px; opacity:.55;" id="callStatus">Connecting…</p>
 </div>
 
 <!-- Log Hours modal (My Impact card, Opportunities & Impact tab).

@@ -1,0 +1,19 @@
+/* Site-wide typography — the one place the site's font is chosen.
+   Every page links this before its own <style> block, so page-specific
+   rules still win; they set font-family with var(--font-sans) rather
+   than naming the font, so changing it here changes it everywhere.
+   Figtree only, at weights 400 and 500. The one exception is the
+   homepage hero (index.html), which loads its own fonts for that. */
+@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;1,400;1,500&display=swap');
+
+:root{
+  --font-sans:'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+body{font-family:var(--font-sans); font-weight:400;}
+
+/* Form controls don't inherit the page font by default. */
+button, input, select, textarea, optgroup{font-family:inherit;}
+
+/* Elements browsers make bold (700) by default. */
+h1, h2, h3, h4, h5, h6, b, strong, th, dt, legend{font-weight:500;}

@@ -72,12 +72,13 @@ function sendPage(res, status, heading, bodyHtml) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>${heading} — CareQuest</title>
+<link rel="stylesheet" href="/css/fonts.css">
 <style>
-  body{margin:0; background:#FBF5E9; color:#232B36; font-family:Inter, system-ui, sans-serif; font-size:20px; line-height:1.6;}
+  body{margin:0; background:#FBF5E9; color:#232B36; font-family:var(--font-sans); font-size:20px; line-height:1.6;}
   main{max-width:560px; margin:0 auto; padding:64px 20px;}
   h1{font-size:32px; line-height:1.25; margin:0 0 20px;}
-  a{color:#204A44; font-weight:700;}
-  button{margin-top:12px; min-height:56px; padding:14px 28px; font:inherit; font-weight:700; color:#fff; background:#2F6B62; border:0; border-radius:14px; cursor:pointer;}
+  a{color:#204A44; font-weight:500;}
+  button{margin-top:12px; min-height:56px; padding:14px 28px; font:inherit; font-weight:500; color:#fff; background:#2F6B62; border:0; border-radius:14px; cursor:pointer;}
   button:hover, button:focus-visible{background:#204A44;}
   button:focus-visible{outline:3px solid #C99A44; outline-offset:3px;}
 </style>
