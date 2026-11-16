@@ -887,6 +887,15 @@ footer a:hover{color:#fff;}
 #homePhotoRow{margin-top:0; align-items:start;}
 #homePhotoRow > *{height:auto;}
 
+/* Home tab: #interviewStatusCard is JS-inserted above #homePhotoRow as
+   a plain block, so nothing put space between them — the card sat
+   flush on the row while the cards inside the row are 10px apart.
+   Stack the panel's children with the SAME gap as the grid inside it
+   (and the Your Match tab's columns), so every card-to-card space on
+   Home is one value, horizontal or vertical. A hidden card is
+   display:none (!important), so it takes no gap when not shown. */
+#panelHome{display:flex; flex-direction:column; gap:10px;}
+
 /* ---- Your Match tab: two independent columns — left (Your Match,
    Your Weekly Availability), right (Schedule a Visit, Messages,
    Calling) — each a flex column using the SAME gap as the grid between
