@@ -64,7 +64,17 @@ module.exports = async (req, res) => {
   try {
     const { table, record } = req.body || {};
     if (table !== 'youth_profiles' && table !== 'senior_profiles') {
-      res.status(400).json({ error: 'Unexpected table' });
+      // Same header fields /api/send-signup-email reports when it can't
+      // parse a body, so a probe with table "probe" (see the debugging
+      // notes) can compare what each route actually received. Headers
+      // only — never the body, which holds sign-up contact details.
+      res.status(400).json({
+        error: 'Unexpected table',
+        content_type: req.headers['content-type'] || null,
+        content_length: req.headers['content-length'] || null,
+        content_encoding: req.headers['content-encoding'] || null,
+        user_agent: req.headers['user-agent'] || null
+      });
       return;
     }
 
